@@ -200,3 +200,17 @@ Over time, it can evolve into a broader platform for:
 - Semantic cache analysis
 - AI gateway observability
 - OpenTelemetry-compatible AI traces
+
+## Product Principle
+
+RAGLens should feel like a developer tool, not an enterprise observability platform.
+
+The v0.1 experience should be:
+
+- Local-first
+- Easy to install
+- Easy to instrument
+- Visual and inspectable
+- Useful within the first demo run
+
+The project should avoid premature infrastructure complexity.
