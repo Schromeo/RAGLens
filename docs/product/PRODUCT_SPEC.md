@@ -1,0 +1,202 @@
+# RAGLens Product Spec
+
+## Product Name
+
+RAGLens
+
+## Tagline
+
+Local-first visual debugger for RAG pipelines.
+
+## Problem
+
+RAG systems are hard to debug.
+
+When a RAG application gives an incorrect answer, developers often cannot easily tell whether the failure came from retrieval, chunking, stale context, conflicting documents, or the LLM generation step.
+
+Most developers debug RAG pipelines with print statements.
+
+RAGLens aims to make the pipeline visible.
+
+## Target Users
+
+### Primary Users
+
+- Developers building RAG applications
+- Indie hackers building AI tools
+- Backend engineers adding LLM/RAG features
+- AI engineers debugging retrieval pipelines
+
+### Secondary Users
+
+- Teams evaluating prompt and retrieval changes
+- Developers building local-first AI apps
+- Open-source contributors working on LLM tooling
+
+## Core Use Case
+
+A developer has a RAG pipeline:
+
+1. User asks a question
+2. App retrieves top-k chunks
+3. App sends chunks to an LLM
+4. LLM returns an answer
+
+The answer is wrong.
+
+The developer wants to inspect:
+
+- What query was used
+- Which chunks were retrieved
+- What scores they had
+- Where they came from
+- What prompt was sent
+- What answer was returned
+- Whether the answer seems grounded in the retrieved chunks
+- Whether chunks conflict with each other
+
+## MVP User Story
+
+As a developer, I want to add a few lines of Python to my RAG app so that I can inspect the retrieval and LLM generation process in a local UI.
+
+## MVP API Example
+
+```python
+from raglens import trace
+
+with trace("refund-policy-qa") as t:
+    t.retrieval(
+        query="What is the refund window?",
+        chunks=[
+            {
+                "id": "chunk_1",
+                "text": "Customers may request a refund within 30 days.",
+                "score": 0.91,
+                "source": "refund_policy_new.md",
+                "metadata": {"version": "2026"}
+            },
+            {
+                "id": "chunk_2",
+                "text": "Customers may request a refund within 14 days.",
+                "score": 0.84,
+                "source": "refund_policy_old.md",
+                "metadata": {"version": "2024"}
+            }
+        ]
+    )
+
+    t.llm(
+        model="gpt-4o-mini",
+        prompt="Answer the user question using the retrieved context.",
+        response="Customers may request a refund within 14 days.",
+        input_tokens=320,
+        output_tokens=80,
+        latency_ms=900
+    )
+```
+
+## MVP Features
+
+### 1. Python SDK
+
+The SDK should allow developers to create a trace and record RAG events.
+
+Required methods:
+
+- `trace(name)`
+- `t.retrieval(query, chunks)`
+- `t.llm(model, prompt, response, input_tokens=None, output_tokens=None, latency_ms=None)`
+
+### 2. Local Collector
+
+Receives trace events from the SDK.
+
+Initial endpoints:
+
+- `POST /api/traces`
+- `GET /api/traces`
+- `GET /api/traces/{trace_id}`
+
+### 3. Local Storage
+
+Stores traces, spans, chunks, and LLM calls.
+
+SQLite is preferred for local-first MVP.
+
+### 4. Dashboard
+
+The dashboard should have:
+
+- Trace list page
+- Trace detail page
+- Query section
+- Retrieval section
+- Chunk cards
+- LLM call section
+- Final answer section
+- Warning section
+
+### 5. Basic Warning Rules
+
+Initial warning rules:
+
+- No retrieved chunks
+- Top retrieval score is low
+- Retrieved chunks appear to conflict
+- Answer may not be grounded in top chunks
+- Duplicate or near-duplicate chunks
+
+These can start as simple heuristic rules.
+
+### 6. Demo
+
+Create a refund policy demo with old and new policy documents.
+
+The demo should show a case where:
+
+- One chunk says refund window is 30 days
+- Another chunk says refund window is 14 days
+- The LLM answer uses the outdated 14-day policy
+- RAGLens surfaces a warning
+
+## Non-goals for v0.1
+
+RAGLens v0.1 will not include:
+
+- User authentication
+- Team workspace
+- Cloud hosting
+- Billing
+- Multi-tenancy
+- Kafka
+- Kubernetes
+- ClickHouse
+- Full prompt management
+- Full eval framework
+- AI gateway
+- Semantic cache
+- Multi-agent PR reviewer
+
+## Success Criteria for v0.1
+
+v0.1 is successful if:
+
+- A developer can install and run RAGLens locally.
+- A developer can instrument a simple RAG pipeline with a few lines of Python.
+- A developer can open the UI and inspect retrieved chunks and LLM output.
+- The demo clearly shows how RAGLens helps debug a wrong RAG answer.
+- The README makes the project understandable within 60 seconds.
+
+## Long-term Vision
+
+RAGLens starts as a local-first RAG debugger.
+
+Over time, it can evolve into a broader platform for:
+
+- LLM tracing
+- Agent observability
+- RAG evaluation
+- Prompt regression testing
+- Semantic cache analysis
+- AI gateway observability
+- OpenTelemetry-compatible AI traces
