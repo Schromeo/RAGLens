@@ -22,3 +22,93 @@
 - Write PRODUCT_SPEC.md.
 - Design the trace/span data model.
 - Decide the first implementation order.
+
+## 2026-05-15
+
+### Completed
+
+- Defined the v0.1 product direction for RAGLens.
+- Confirmed that RAGLens starts as a local-first visual debugger for RAG pipelines.
+- Established the long-term architecture direction: start with RAG debugging, while keeping the internal model compatible with future AgentOps/TraceForge-style tracing.
+- Created the initial product specification in `docs/product/PRODUCT_SPEC.md`.
+- Defined the initial trace/span data model in `docs/architecture/TRACE_DATA_MODEL.md`.
+- Decided that the developer-facing Python API should stay simple, while the internal representation uses traces and spans.
+- Defined the core v0.1 entities:
+  - Trace
+  - Span
+  - Retrieval chunk
+  - LLM span
+  - Warning
+- Defined the initial SQLite schema for:
+  - `traces`
+  - `spans`
+  - `warnings`
+- Implemented the first minimal Python SDK.
+- Added a `trace()` context manager.
+- Added support for recording retrieval spans.
+- Added support for recording LLM spans.
+- Created the refund policy demo.
+- Verified that the SDK can generate a complete trace payload locally.
+- Pushed the initial documentation and SDK code to GitHub.
+
+### Key Decisions
+
+- RAGLens v0.1 will use a local-first architecture.
+- SQLite will be the default local storage backend.
+- The Python SDK will expose a simple API:
+  - `trace(name)`
+  - `t.retrieval(...)`
+  - `t.llm(...)`
+- Internally, RAGLens will represent RAG pipeline activity using a trace/span model.
+- A trace represents one complete RAG request.
+- A span represents one step inside the pipeline, such as retrieval or LLM generation.
+- The initial span types are:
+  - `retrieval`
+  - `prompt`
+  - `llm`
+  - `custom`
+- Warning rules will start as lightweight heuristics, not ML-based evaluation.
+
+### Validation
+
+Ran the refund policy demo locally:
+
+```bash
+cd sdk/python
+python -m examples.refund_policy_demo
+```
+
+The SDK successfully generated a trace payload containing:
+
+- One trace named refund-policy-qa
+- One retrieval span named search_refund_docs
+- Two retrieved chunks:
+  - refund_policy_new.md, version 2026, refund window 30 days
+  - refund_policy_old.md, version 2024, refund window 14 days
+- One LLM span named generate_answer
+- A final answer using the outdated 14 days refund window
+
+### Notes
+
+This is the first runnable milestone for RAGLens.
+
+The project now has both:
+
+- A documented product and architecture direction
+- A working Python SDK prototype that can generate structured trace payloads
+
+The current SDK only prints trace JSON locally.
+
+The next step is to build the Go collector so the SDK can send traces to a local HTTP endpoint and persist them in SQLite.
+
+### Next Step
+
+Build the local Go collector.
+
+Initial collector scope:
+
+- GET /health
+- POST /api/traces
+- SQLite persistence
+- GET /api/traces
+- GET /api/traces/{trace_id}
