@@ -1,0 +1,5 @@
+# Local RAGLens test artifacts
+sample_trace.json
+*.db
+*.db-shm
+*.db-wal

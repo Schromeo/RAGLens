@@ -112,3 +112,63 @@ Initial collector scope:
 - SQLite persistence
 - GET /api/traces
 - GET /api/traces/{trace_id}
+
+## 2026-05-15
+
+### Completed
+
+- Implemented the initial Go collector.
+- Added `GET /health`.
+- Added `POST /api/traces`.
+- Added SQLite-backed local persistence.
+- Added storage for traces and spans.
+- Verified that the collector can receive a Python SDK-generated trace payload.
+- Verified that the collector stores trace data in local SQLite.
+
+### Validation
+
+Started the collector locally:
+
+```bash
+cd collector/go
+go run ./cmd/raglens-collector
+```
+
+Checked collector health:
+
+```powershell
+Invoke-RestMethod http://localhost:4319/health
+```
+
+Posted a sample trace payload:
+
+```powershell
+Invoke-RestMethod `
+  -Uri http://localhost:4319/api/traces `
+  -Method POST `
+  -ContentType "application/json" `
+  -InFile sample_trace.json
+```
+
+The collector returned:
+
+```json
+{
+  "status": "stored",
+  "warnings_generated": 0
+}
+```
+
+### Notes
+
+The local collector can now receive and persist trace payloads.
+
+The next step is to add a flush() method to the Python SDK so demo traces can be sent directly to the collector without manually copying JSON into a file.
+
+### Commit
+
+```bash
+git add .
+git commit -m "feat(collector): add Go collector with SQLite persistence"
+git push
+```

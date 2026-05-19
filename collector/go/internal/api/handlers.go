@@ -1,1 +1,140 @@
+package api
 
+import (
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"log"
+	"net/http"
+	"strings"
+
+	"raglens-collector/internal/models"
+	"raglens-collector/internal/storage"
+)
+
+type Server struct {
+	store *storage.Store
+}
+
+func NewServer(store *storage.Store) *Server {
+	return &Server{
+		store: store,
+	}
+}
+
+func (s *Server) Routes() http.Handler {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /health", s.handleHealth)
+	mux.HandleFunc("POST /api/traces", s.handlePostTrace)
+	mux.HandleFunc("GET /api/traces", s.handleListTraces)
+	mux.HandleFunc("GET /api/traces/", s.handleGetTraceDetail)
+
+	return withCORS(withLogging(mux))
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":  "ok",
+		"service": "raglens-collector",
+	})
+}
+
+func (s *Server) handlePostTrace(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var payload models.TracePayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, models.ErrorResponse{
+			Error: "invalid JSON payload",
+		})
+		return
+	}
+
+	if err := s.store.SaveTracePayload(r.Context(), payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, models.ErrorResponse{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, models.StoreTraceResponse{
+		TraceID:           payload.Trace.TraceID,
+		Status:            "stored",
+		WarningsGenerated: 0,
+	})
+}
+
+func (s *Server) handleListTraces(w http.ResponseWriter, r *http.Request) {
+	traces, err := s.store.ListTraces(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, models.ErrorResponse{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, models.TraceListResponse{
+		Traces: traces,
+	})
+}
+
+func (s *Server) handleGetTraceDetail(w http.ResponseWriter, r *http.Request) {
+	traceID := strings.TrimPrefix(r.URL.Path, "/api/traces/")
+	traceID = strings.TrimSpace(traceID)
+
+	if traceID == "" {
+		writeJSON(w, http.StatusBadRequest, models.ErrorResponse{
+			Error: "trace id is required",
+		})
+		return
+	}
+
+	detail, err := s.store.GetTraceDetail(r.Context(), traceID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, models.ErrorResponse{
+				Error: "trace not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, models.ErrorResponse{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, detail)
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		log.Printf("failed to write JSON response: %v", err)
+	}
+}
+
+func withLogging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
