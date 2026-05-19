@@ -2,55 +2,76 @@
 
 ## Current Focus
 
-Initialize the RAGLens repository from scratch.
+Build the initial React dashboard on top of the working local ingestion path.
+
+The documentation baseline, trace/span data model, Python SDK, Go collector, and SQLite storage are already in place.
 
 ## Current Goal
 
-Create the project skeleton and initial documentation files that define the product direction, engineering rules, roadmap, and collaboration context.
+Make stored traces inspectable in a browser with a minimal but useful dashboard.
 
-## Files Being Created
+The first dashboard slice should cover:
 
-- README.md
-- AGENTS.md
-- docs/ai-context/AI_HANDOFF.md
-- docs/ai-context/DECISIONS.md
-- docs/ai-context/ROADMAP.md
-- docs/ai-context/DEVLOG.md
-- docs/ai-context/CURRENT_TASK.md
-- docs/product/PRODUCT_SPEC.md
+- Trace list
+- Trace detail
+- Span timeline/readout
+- Retrieval chunk inspection
+- Raw JSON fallback panel for debugging
 
-## Next Step
+## Current System Status
 
-After the documentation skeleton is created, design the v0.1 product specification and the initial trace/span data model.
+Completed and verified so far:
 
-# Current Task
+- Product direction and MVP scope docs
+- Trace/span architecture and data model docs
+- Python SDK trace context manager
+- Retrieval span logging
+- LLM span logging
+- Python SDK `flush()` support
+- Go collector HTTP APIs
+  - `GET /health`
+  - `POST /api/traces`
+  - `GET /api/traces`
+  - `GET /api/traces/{trace_id}`
+- SQLite persistence for traces, spans, and warnings
+- End-to-end local pipeline validation
 
-## Current Focus
+Current validated path:
 
-Design the initial RAGLens v0.1 architecture and trace/span data model.
+```text
+Python demo -> SDK trace/span -> flush() -> POST /api/traces -> Go collector -> SQLite -> GET /api/traces -> GET /api/traces/{trace_id}
+```
 
-## Current Goal
+## Scope Clarification
 
-Define the shared data contract used by:
+Current trace content is demo-driven (mock retrieval/LLM payload values), but transport and persistence are real.
 
-- Python SDK
-- Go Collector
-- SQLite storage
-- React Dashboard
+This means infrastructure is validated, while production data integrations are still pending.
 
-The product spec already exists and should be treated as the v0.1 product source of truth.
+## Primary Files Involved
 
-## Files Being Created
+- `sdk/python/raglens/trace.py`
+- `sdk/python/examples/refund_policy_demo.py`
+- `collector/go/internal/api/handlers.go`
+- `collector/go/internal/storage/sqlite.go`
+- `collector/go/internal/models/models.go`
+- `dashboard/web/src/App.tsx`
+- `dashboard/web/src/pages/HomePage.tsx`
+- `dashboard/web/src/components/TraceViewer.tsx`
+- `dashboard/web/src/api/client.ts`
 
-- docs/architecture/TRACE_DATA_MODEL.md
-- docs/architecture/SYSTEM_ARCHITECTURE.md
+## Immediate Next Steps
 
-## Key Decision
+1. Implement dashboard API client for list/detail endpoints.
+2. Build trace list page from `GET /api/traces`.
+3. Build trace detail page from `GET /api/traces/{trace_id}`.
+4. Render spans and retrieval chunks in a readable layout.
+5. Add empty-state and error-state handling.
+6. Keep warning UI as placeholder until warning rules are implemented.
 
-RAGLens will expose a simple Python API for developers, while internally representing RAG pipeline events using a trace/span model.
+## Out of Scope For This Step
 
-This keeps the MVP easy to use while preserving a path toward future AgentOps-style tracing.
-
-## Next Step
-
-Create `docs/architecture/TRACE_DATA_MODEL.md`.
+- Cloud deployment or multi-tenant features
+- Auth/billing
+- Advanced warning engine logic
+- Non-local infrastructure changes
