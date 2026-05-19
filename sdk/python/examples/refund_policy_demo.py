@@ -66,7 +66,11 @@ def main() -> None:
             },
         )
 
-    t.print_json()
+    print(t.to_json())
+
+    response = t.flush()
+    print("\nSent trace to RAGLens collector:")
+    print(response)
 
 
 if __name__ == "__main__":

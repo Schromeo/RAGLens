@@ -172,3 +172,47 @@ git add .
 git commit -m "feat(collector): add Go collector with SQLite persistence"
 git push
 ```
+
+## 2026-05-18
+
+### Completed
+
+- Added `flush()` support to the Python SDK.
+- Added `collector_url` support to the trace context manager.
+- Updated the refund policy demo to send traces directly to the local collector.
+- Verified that the Python SDK can POST trace payloads to `POST /api/traces`.
+- Verified that the Go collector returns a successful stored response.
+
+### Validation
+
+Started the collector:
+
+```bash
+cd collector/go
+go run ./cmd/raglens-collector
+```
+
+Ran the Python demo:
+
+```bash
+cd sdk/python
+python -m examples.refund_policy_demo
+```
+
+The SDK generated a trace payload and sent it to the collector.
+
+Collector response:
+
+```json
+{
+  "trace_id": "trace_af404e92216b4f7f97fb415208dc5992",
+  "status": "stored",
+  "warnings_generated": 0
+}
+```
+
+### Notes
+
+RAGLens now has a working local trace ingestion path from Python SDK to Go collector to SQLite.
+
+The next step is to build the initial React Dashboard so traces can be inspected visually instead of through raw JSON.

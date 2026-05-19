@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 import json
 import traceback
+import urllib.request
+import urllib.error
 
 from .models import (
     JsonDict,
@@ -33,11 +35,13 @@ class RAGLensTrace:
         name: str,
         query: Optional[str] = None,
         metadata: Optional[JsonDict] = None,
+        collector_url: Optional[str] = None,
     ) -> None:
         self.trace_id = new_id("trace")
         self.name = name
         self.query = query
         self.metadata = metadata or {}
+        self.collector_url = collector_url or "http://localhost:4319"
 
         self._started_at: Optional[str] = None
         self._ended_at: Optional[str] = None
@@ -248,6 +252,54 @@ class RAGLensTrace:
     def print_json(self) -> None:
         print(self.to_json())
 
+    def flush(self, collector_url: Optional[str] = None, timeout: float = 5.0) -> JsonDict:
+        """
+        Send the trace payload to the local RAGLens collector.
+
+        Args:
+            collector_url: Optional collector base URL. Defaults to self.collector_url.
+            timeout: HTTP timeout in seconds.
+
+        Returns:
+            Collector JSON response.
+
+        Raises:
+            RuntimeError: If the collector request fails.
+        """
+        base_url = (collector_url or self.collector_url).rstrip("/")
+        url = f"{base_url}/api/traces"
+
+        data = json.dumps(self.to_dict()).encode("utf-8")
+
+        request = urllib.request.Request(
+            url=url,
+            data=data,
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "raglens-python-sdk/0.1.0",
+            },
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                response_body = response.read().decode("utf-8")
+                if not response_body:
+                    return {}
+
+                return json.loads(response_body)
+
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(
+                f"RAGLens collector returned HTTP {exc.code}: {body}"
+            ) from exc
+
+        except urllib.error.URLError as exc:
+            raise RuntimeError(
+                f"Failed to connect to RAGLens collector at {url}: {exc.reason}"
+            ) from exc
+
     def _normalize_chunks(self, chunks: List[JsonDict]) -> List[JsonDict]:
         normalized: List[JsonDict] = []
 
@@ -269,8 +321,9 @@ def trace(
     name: str,
     query: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
+    collector_url: Optional[str] = None,
 ) -> RAGLensTrace:
     """
     Create a RAGLens trace context manager.
     """
-    return RAGLensTrace(name=name, query=query, metadata=metadata)
+    return RAGLensTrace(name=name, query=query, metadata=metadata, collector_url=collector_url,)
