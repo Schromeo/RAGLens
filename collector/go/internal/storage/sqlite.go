@@ -243,6 +243,88 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	return nil
 }
 
+func (s *Store) SaveWarnings(ctx context.Context, warnings []models.Warning) error {
+	if len(warnings) == 0 {
+		return nil
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin warnings transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	stmt, err := tx.PrepareContext(
+		ctx,
+		`
+INSERT INTO warnings (
+    id, trace_id, span_id, type, severity, message, details_json, created_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`,
+	)
+	if err != nil {
+		return fmt.Errorf("prepare insert warning statement: %w", err)
+	}
+
+	defer stmt.Close()
+
+	for _, warning := range warnings {
+		if warning.WarningID == "" {
+			return errors.New("warning.warning_id is required")
+		}
+
+		if warning.TraceID == "" {
+			return errors.New("warning.trace_id is required")
+		}
+
+		if warning.Type == "" {
+			return errors.New("warning.type is required")
+		}
+
+		if warning.Severity == "" {
+			return errors.New("warning.severity is required")
+		}
+
+		if warning.Message == "" {
+			return errors.New("warning.message is required")
+		}
+
+		if warning.CreatedAt == "" {
+			return errors.New("warning.created_at is required")
+		}
+
+		detailsJSON, err := marshalJSON(warning.Details)
+		if err != nil {
+			return fmt.Errorf("marshal warning details: %w", err)
+		}
+
+		_, err = stmt.ExecContext(
+			ctx,
+			warning.WarningID,
+			warning.TraceID,
+			nullableString(warning.SpanID),
+			warning.Type,
+			warning.Severity,
+			warning.Message,
+			detailsJSON,
+			warning.CreatedAt,
+		)
+		if err != nil {
+			return fmt.Errorf("insert warning %s: %w", warning.WarningID, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit warnings transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Store) ListTraces(ctx context.Context) ([]models.TraceListItem, error) {
 	rows, err := s.db.QueryContext(
 		ctx,

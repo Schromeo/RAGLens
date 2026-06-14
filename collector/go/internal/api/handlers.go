@@ -10,6 +10,7 @@ import (
 
 	"raglens-collector/internal/models"
 	"raglens-collector/internal/storage"
+	"raglens-collector/internal/warnings"
 )
 
 type Server struct {
@@ -58,10 +59,20 @@ func (s *Server) handlePostTrace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	engine := warnings.NewEngine()
+	generatedWarnings := engine.Generate(payload)
+
+	if err := s.store.SaveWarnings(r.Context(), generatedWarnings); err != nil {
+		writeJSON(w, http.StatusInternalServerError, models.ErrorResponse{
+			Error: err.Error(),
+		})
+		return
+	}
+
 	writeJSON(w, http.StatusCreated, models.StoreTraceResponse{
 		TraceID:           payload.Trace.TraceID,
 		Status:            "stored",
-		WarningsGenerated: 0,
+		WarningsGenerated: len(generatedWarnings),
 	})
 }
 
