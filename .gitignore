@@ -1,5 +1,55 @@
-# Local RAGLens test artifacts
-sample_trace.json
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node / React / Vite
+node_modules/
+dashboard/web/node_modules/
+dashboard/web/dist/
+dashboard/web/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Go
+*.exe
+*.test
+*.out
+collector/go/raglens-collector
+collector/go/raglens-collector.exe
+
+# Local databases
 *.db
 *.db-shm
 *.db-wal
+raglens.db
+collector/go/raglens.db
+collector/go/raglens.db-shm
+collector/go/raglens.db-wal
+
+# Local test artifacts
+sample_trace.json
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local

@@ -270,7 +270,7 @@ LIMIT 100
 
 	defer rows.Close()
 
-	var traces []models.TraceListItem
+	traces := make([]models.TraceListItem, 0)
 
 	for rows.Next() {
 		var (
@@ -421,7 +421,7 @@ ORDER BY started_at ASC
 
 	defer rows.Close()
 
-	var spans []models.Span
+	spans := make([]models.Span, 0)
 
 	for rows.Next() {
 		var (
@@ -501,7 +501,7 @@ ORDER BY created_at ASC
 
 	defer rows.Close()
 
-	var warnings []models.Warning
+	warnings := make([]models.Warning, 0)
 
 	for rows.Next() {
 		var (
