@@ -1,77 +1,121 @@
 # Current Task
 
 ## Current Focus
+Implement the first RAGLens diagnosis layer.
 
-Build the initial React dashboard on top of the working local ingestion path.
+The Python SDK, Go collector, SQLite persistence, and initial React Dashboard are now working.
 
-The documentation baseline, trace/span data model, Python SDK, Go collector, and SQLite storage are already in place.
+RAGLens can generate a trace from the Python SDK, send it to the local collector, persist it in SQLite, and display it in the browser dashboard.
 
 ## Current Goal
+Add a basic warning engine that generates lightweight diagnostic warnings from stored trace/span data.
 
-Make stored traces inspectable in a browser with a minimal but useful dashboard.
+The goal is not to build a perfect evaluator.
 
-The first dashboard slice should cover:
-
-- Trace list
-- Trace detail
-- Span timeline/readout
-- Retrieval chunk inspection
-- Raw JSON fallback panel for debugging
+The goal is to surface obvious RAG debugging signals in the dashboard.
 
 ## Current System Status
+Completed so far:
 
-Completed and verified so far:
+- Product direction defined
+- Product spec created
+- Trace/span data model created
+- Python SDK created
+- `trace()` context manager implemented
+- Retrieval span logging implemented
+- LLM span logging implemented
+- SDK `flush()` implemented
+- Refund policy demo created
+- Go collector created
+- SQLite persistence implemented
+- Collector trace ingestion implemented
+- Collector trace list/detail APIs implemented
+- React Dashboard MVP created
+- Trace list page implemented
+- Trace detail page implemented
+- Retrieved chunk viewer implemented
+- LLM prompt/response viewer implemented
+- Warning placeholder implemented
+- Dashboard null-warning crash fixed
+- `.gitignore` updated for local artifacts
 
-- Product direction and MVP scope docs
-- Trace/span architecture and data model docs
-- Python SDK trace context manager
-- Retrieval span logging
-- LLM span logging
-- Python SDK `flush()` support
-- Go collector HTTP APIs
-  - `GET /health`
-  - `POST /api/traces`
-  - `GET /api/traces`
-  - `GET /api/traces/{trace_id}`
-- SQLite persistence for traces, spans, and warnings
-- End-to-end local pipeline validation
-
-Current validated path:
+## Current Working Path
 
 ```text
-Python demo -> SDK trace/span -> flush() -> POST /api/traces -> Go collector -> SQLite -> GET /api/traces -> GET /api/traces/{trace_id}
+Python SDK
+  ↓
+t.flush()
+  ↓
+POST /api/traces
+  ↓
+Go Collector
+  ↓
+SQLite
+  ↓
+GET /api/traces
+  ↓
+React Dashboard
 ```
 
-## Scope Clarification
+## Current Milestone
 
-Current trace content is demo-driven (mock retrieval/LLM payload values), but transport and persistence are real.
+Build the first warning engine.
 
-This means infrastructure is validated, while production data integrations are still pending.
+The initial warning engine should inspect trace payloads after ingestion and insert warning records into SQLite.
 
-## Primary Files Involved
+## Files Likely To Change Next
 
-- `sdk/python/raglens/trace.py`
-- `sdk/python/examples/refund_policy_demo.py`
-- `collector/go/internal/api/handlers.go`
+Go Collector:
+
+- `collector/go/internal/warnings/engine.go`
 - `collector/go/internal/storage/sqlite.go`
+- `collector/go/internal/api/handlers.go`
 - `collector/go/internal/models/models.go`
-- `dashboard/web/src/App.tsx`
-- `dashboard/web/src/pages/HomePage.tsx`
-- `dashboard/web/src/components/TraceViewer.tsx`
-- `dashboard/web/src/api/client.ts`
 
-## Immediate Next Steps
+Dashboard:
 
-1. Implement dashboard API client for list/detail endpoints.
-2. Build trace list page from `GET /api/traces`.
-3. Build trace detail page from `GET /api/traces/{trace_id}`.
-4. Render spans and retrieval chunks in a readable layout.
-5. Add empty-state and error-state handling.
-6. Keep warning UI as placeholder until warning rules are implemented.
+- `dashboard/web/src/pages/TraceDetailPage.tsx`
+- `dashboard/web/src/components/WarningCard.tsx`
 
-## Out of Scope For This Step
+Documentation:
 
-- Cloud deployment or multi-tenant features
-- Auth/billing
-- Advanced warning engine logic
-- Non-local infrastructure changes
+- `docs/ai-context/DEVLOG.md`
+- `docs/ai-context/DECISIONS.md`
+- `docs/architecture/SYSTEM_ARCHITECTURE.md`
+
+## Initial Warning Rules
+
+Start with simple heuristic rules:
+
+- `no_retrieved_chunks`
+- `low_retrieval_score`
+- `duplicate_chunks`
+- `conflicting_chunks`
+- simplified `answer_not_grounded`
+
+The refund policy demo should trigger a conflicting_chunks warning because retrieved chunks contain both 30 days and 14 days refund windows.
+
+## Key Decision
+
+Warning generation should live in the Go collector for v0.1.
+
+Reason:
+
+The collector already receives the full trace payload, owns local persistence, and can generate warnings immediately after storing traces and spans.
+
+The Python SDK should remain lightweight and focused on instrumentation.
+
+## Next Step
+
+Create the initial warning engine under:
+
+- `collector/go/internal/warnings`
+
+Then call it from POST /api/traces after saving the trace payload.
+
+The first successful validation should be:
+
+1. Run the refund policy demo.
+2. Send the trace to the collector.
+3. Collector generates a warning.
+4. Dashboard displays the warning in the trace detail page.

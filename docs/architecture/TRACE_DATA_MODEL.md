@@ -202,6 +202,10 @@ Warnings are not meant to be perfect in v0.1.
 
 They are lightweight debugging signals.
 
+Warning generation is not implemented yet in the current codebase.
+
+The `warnings` table and response shape already exist so the dashboard can display warnings once the warning engine is added.
+
 ---
 
 # Trace Schema
@@ -952,3 +956,17 @@ RAGLens v0.1 will not include:
 * Kubernetes
 * Full eval framework
 * Full prompt management
+
+## Implementation Notes
+
+The current v0.1 implementation stores traces and spans in SQLite and returns them through the Go collector APIs.
+
+Empty arrays should be returned as `[]`, not `null`.
+
+This applies to:
+
+- `spans`
+- `warnings`
+- trace lists
+
+This prevents dashboard runtime errors and keeps the API response shape stable.

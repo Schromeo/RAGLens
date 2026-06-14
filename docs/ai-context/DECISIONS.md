@@ -81,3 +81,29 @@ The initial supported span types are:
 - custom
 
 Additional span types such as tool_call, agent_step, memory_read, rerank, and eval may be added later.
+
+## Warning engine will live in the Go collector for v0.1
+
+The v0.1 warning engine will run inside the Go collector.
+
+Reason:
+
+- The collector receives the full trace payload.
+- The collector owns SQLite persistence.
+- Warnings should be generated consistently regardless of which SDK sends traces.
+- The Python SDK should stay lightweight and focus on instrumentation.
+- The React Dashboard should only display warnings, not generate them.
+
+The initial warning engine will use simple heuristic rules.
+
+The first target warning is `conflicting_chunks`, demonstrated by the refund policy demo where retrieved chunks contain both `30 days` and `14 days` refund windows.
+
+## Dashboard before warning engine
+
+RAGLens built the dashboard before the warning engine.
+
+Reason:
+
+The SDK → Collector → SQLite path was already working, and a visual inspection UI makes the product easier to validate.
+
+Having the dashboard first also gives warning rules a visible place to appear once implemented.
