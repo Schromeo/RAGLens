@@ -1,5 +1,17 @@
 # Devlog
 
+## 2026-06-15 (Real Local RAG Docs)
+
+### Completed
+
+- Added `docs/ai-context/REAL_LOCAL_RAG_MILESTONE.md` to define active milestone scope, exit criteria, runbook, and non-goals.
+- Added `docs/architecture/LOCAL_RETRIEVAL_BASELINE.md` to document current local retrieval implementation (chunking + TF-IDF + cosine).
+
+### Notes
+
+- Current retriever baseline is intentionally lexical and transparent.
+- Framework adapters remain deferred until Real Local RAG Demo is validated.
+
 ## 2026-06-15 (Docs Sync)
 
 ### Completed
