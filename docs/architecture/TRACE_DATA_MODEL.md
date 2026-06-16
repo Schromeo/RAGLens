@@ -202,9 +202,13 @@ Warnings are not meant to be perfect in v0.1.
 
 They are lightweight debugging signals.
 
-Warning generation is not implemented yet in the current codebase.
+Warning generation is implemented in the Go collector.
 
-The `warnings` table and response shape already exist so the dashboard can display warnings once the warning engine is added.
+Current baseline rule:
+
+* `conflicting_chunks`
+
+The refund policy demo validates this rule by returning conflicting `30 days` vs `14 days` chunk evidence, which generates one warning end-to-end.
 
 ---
 

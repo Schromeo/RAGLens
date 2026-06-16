@@ -58,7 +58,8 @@ Current tables:
 
 Note:
 
-- The `warnings` table exists, but warning generation is not implemented yet.
+- Warning generation is implemented in the Go collector.
+- The first live diagnosis rule is `conflicting_chunks`.
 
 ### React Dashboard
 
@@ -72,7 +73,7 @@ It reads collector APIs and displays:
 - retrieval chunks
 - LLM prompt and response
 - metadata
-- warning placeholder
+- warning cards
 
 ## Current Data Flow
 
@@ -81,16 +82,16 @@ It reads collector APIs and displays:
 3. SDK calls `t.flush()`.
 4. Collector receives the trace payload.
 5. Collector stores trace and spans in SQLite.
-6. Dashboard fetches traces from the collector.
-7. Developer inspects the RAG pipeline in the browser.
+6. Collector runs the warning engine.
+7. Collector stores generated warnings in SQLite.
+8. Dashboard fetches traces from the collector.
+9. Developer inspects spans and warnings in the browser.
 
-## Next Architecture Addition
+## Warning Engine Flow
 
-The next component is the warning engine.
+The warning engine runs inside the Go collector after trace ingestion and before the response is returned from `POST /api/traces`.
 
-It will run inside the Go collector after trace ingestion and before the response is returned from `POST /api/traces`.
-
-Future flow:
+Current flow:
 
 ```text
 POST /api/traces

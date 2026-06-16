@@ -107,3 +107,20 @@ Reason:
 The SDK → Collector → SQLite path was already working, and a visual inspection UI makes the product easier to validate.
 
 Having the dashboard first also gives warning rules a visible place to appear once implemented.
+
+## 2026-06-13 — Warning rules ship incrementally in v0.1
+
+The warning engine is now active in the Go collector and runs after trace persistence.
+
+For v0.1, warning rules should be shipped incrementally instead of waiting for a full rule set.
+
+Reason:
+
+- It validates the full diagnosis loop early: ingestion -> warning generation -> SQLite -> API -> dashboard card rendering.
+- It reduces delivery risk by keeping each rule small and testable.
+- It keeps the product local-first and simple while still delivering visible debugging value.
+
+Current baseline:
+
+- First live rule: `conflicting_chunks`
+- Demo validation: refund policy chunks with conflicting `30 days` and `14 days` windows generate one warning end-to-end.

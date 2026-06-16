@@ -1,5 +1,51 @@
 # Devlog
 
+## 2026-06-13
+
+### Completed
+
+- Added Warning Engine in the Go collector.
+- Implemented the first diagnosis rule: `conflicting_chunks`.
+- Collector now generates and persists warnings after storing trace payloads.
+- Dashboard trace detail now renders real warning cards.
+- Refund policy demo now reliably triggers one warning for conflicting `30 days` vs `14 days` refund-policy chunks.
+
+### Validation
+
+Collector health check:
+
+```powershell
+Invoke-RestMethod http://localhost:4319/health
+```
+
+Demo execution:
+
+```bash
+cd sdk/python
+python -m examples.refund_policy_demo
+```
+
+Observed result:
+
+- Trace is ingested and persisted.
+- `conflicting_chunks` warning is generated and stored.
+- Warning appears on dashboard trace detail.
+
+### Notes
+
+RAGLens now has an end-to-end diagnosis path from ingestion to UI rendering.
+
+The warning engine is intentionally incremental in v0.1: start with one high-signal rule, validate the full loop, then add additional rules.
+
+### Next Step
+
+Expand warning coverage with the next rules:
+
+- `no_retrieved_chunks`
+- `low_retrieval_score`
+- `duplicate_chunks`
+- simplified `answer_not_grounded`
+
 ## 2026-05-14
 
 ### Completed

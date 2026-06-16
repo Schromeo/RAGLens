@@ -45,19 +45,19 @@ Completed so far:
   * trace detail page
   * retrieved chunk viewer
   * LLM prompt/response viewer
-  * warning placeholder
+  * warning cards
 * Refund policy demo end-to-end flow
 
 ### Active focus
 
-The current milestone is to implement the first warning engine.
+The current milestone is to expand warning coverage beyond the first shipped rule.
 
 Immediate goals:
 
-* Generate warning records in the Go collector
-* Persist warning records in SQLite
-* Return warnings from the trace detail API
-* Render real warnings in the dashboard trace detail page
+* Add additional warning rules in the Go collector
+* Keep warning persistence in SQLite stable
+* Keep warning responses in trace detail API stable
+* Improve warning signal quality and dashboard readability
 
 ---
 
@@ -98,14 +98,14 @@ Let a developer trace a RAG pipeline, store traces locally, and inspect the pipe
 * [x] Trace detail page
 * [x] Retrieved chunks viewer
 * [x] LLM call viewer
-* [x] Warning panel placeholder
+* [x] Warning cards in trace detail
 
 #### Warning engine
 
 * [ ] `no_retrieved_chunks`
 * [ ] `low_retrieval_score`
 * [ ] `duplicate_chunks`
-* [ ] `conflicting_chunks`
+* [x] `conflicting_chunks`
 * [ ] simplified `answer_not_grounded`
 
 ### Exit Criteria

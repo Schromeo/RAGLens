@@ -102,31 +102,34 @@ React Dashboard
   - `GET /api/traces`
   - `GET /api/traces/{trace_id}`
   - SQLite persistence for traces and spans
+  - Warning Engine runs after trace persistence
+  - First diagnosis rule: `conflicting_chunks`
+  - Warning persistence in SQLite
 - React Dashboard
   - trace list page
   - trace detail page
   - span timeline
   - retrieved chunk viewer
   - LLM prompt/response viewer
-  - warning placeholder
+  - real warning cards on trace detail
 
 The refund policy demo successfully sends traces from the Python SDK to the local collector and displays them in the dashboard.
 
 ### Current Known Issues / Notes
 
-- Warning generation is not implemented yet.
-- The dashboard currently displays warning placeholders.
+- Warning coverage is still partial in v0.1.
+- Only `conflicting_chunks` is implemented so far.
 - Trace duration may show `0ms` in the mock demo because the demo executes instantly.
 - Local artifacts such as `node_modules`, SQLite database files, and sample trace files should stay ignored by git.
 
 ### Next Major Step
 
-Implement the first warning engine.
+Expand warning coverage in the existing warning engine.
 
 Initial warning rules should include:
 
 - `no_retrieved_chunks`
 - `low_retrieval_score`
 - `duplicate_chunks`
-- `conflicting_chunks`
+- `conflicting_chunks` (completed)
 - simplified `answer_not_grounded`
