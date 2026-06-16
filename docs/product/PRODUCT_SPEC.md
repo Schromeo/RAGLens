@@ -187,6 +187,46 @@ v0.1 is successful if:
 - The demo clearly shows how RAGLens helps debug a wrong RAG answer.
 - The README makes the project understandable within 60 seconds.
 
+## Implementation Snapshot (2026-06-15)
+
+Current milestone status:
+
+- Warning Engine / Diagnosis Layer MVP is complete.
+- The dashboard warning section now renders real persisted warnings (not placeholder-only UI).
+
+Validated local flow:
+
+```text
+Python SDK
+    -> t.flush()
+    -> POST /api/traces
+    -> Go Collector (:4319)
+    -> SQLite persistence
+    -> warning generation + persistence
+    -> GET /api/traces/{trace_id}
+    -> React dashboard warning cards
+```
+
+Implemented warning rules:
+
+- `no_retrieved_chunks`
+- `low_retrieval_score`
+- `duplicate_chunks`
+- `conflicting_chunks`
+- simplified `answer_not_grounded`
+
+Primary warning smoke test:
+
+- `sdk/python/examples/warning_rules_demo.py`
+- supports all-rules and single-rule runs
+- expected result per case: `warnings_generated: 1`
+
+Next recommended milestone:
+
+- Real Local RAG Demo
+- keep schema stable, replace mock chunks with real retrieval output
+- do this before LangChain/LlamaIndex adapter work
+
 ## Long-term Vision
 
 RAGLens starts as a local-first RAG debugger.

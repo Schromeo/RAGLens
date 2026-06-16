@@ -38,7 +38,41 @@ And inspect the full RAG trace locally.
 
 ## Current Status
 
-RAGLens is currently in early development.
+v0.1 (Local RAG Debugger MVP) is active.
+
+The Warning Engine / Diagnosis Layer MVP is complete.
+
+Implemented local inspection loop:
+
+```text
+Python SDK
+    -> t.flush()
+    -> POST /api/traces
+    -> Go Collector (:4319)
+    -> SQLite (traces, spans, warnings)
+    -> GET /api/traces/{trace_id}
+    -> React Dashboard warning cards
+```
+
+Implemented warning rules:
+
+- `no_retrieved_chunks`
+- `low_retrieval_score` (default threshold `0.5`, overridable by span metadata)
+- `duplicate_chunks`
+- `conflicting_chunks`
+- simplified `answer_not_grounded`
+
+Smoke test entrypoint:
+
+```powershell
+cd sdk/python
+$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+python -m examples.warning_rules_demo all
+```
+
+Expected smoke result: each demo returns `warnings_generated: 1`.
+
+Implementation detail: `warning_rules_demo.py` flushes after exiting the `trace()` context manager so `ended_at` and `duration_ms` are finalized before sending.
 
 # Roadmap
 - Python SDK
@@ -46,7 +80,8 @@ RAGLens is currently in early development.
 - Trace list page
 - Trace detail page
 - Retrieved chunk viewer
-- Basic RAG warnings
+- Basic RAG warnings (MVP complete)
+- Real Local RAG Demo (active)
 - LangChain / LlamaIndex examples
 - Eval dataset export
 - Agent/tool call tracing

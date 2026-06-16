@@ -16,10 +16,15 @@ import (
 const (
 	TypeConflictingChunks = "conflicting_chunks"
 	TypeNoRetrievedChunks = "no_retrieved_chunks"
+	TypeLowRetrievalScore = "low_retrieval_score"
+	TypeDuplicateChunks   = "duplicate_chunks"
+	TypeAnswerNotGrounded = "answer_not_grounded"
 
 	SeverityInfo    = "info"
 	SeverityWarning = "warning"
 	SeverityError   = "error"
+
+	DefaultLowScoreThreshold = 0.5
 )
 
 type Engine struct{}
@@ -32,7 +37,10 @@ func (e *Engine) Generate(payload models.TracePayload) []models.Warning {
 	result := make([]models.Warning, 0)
 
 	result = append(result, e.detectNoRetrievedChunks(payload)...)
+	result = append(result, e.detectLowRetrievalScore(payload)...)
+	result = append(result, e.detectDuplicateChunks(payload)...)
 	result = append(result, e.detectConflictingChunks(payload)...)
+	result = append(result, e.detectAnswerNotGrounded(payload)...)
 
 	return result
 }
@@ -70,6 +78,142 @@ func (e *Engine) detectNoRetrievedChunks(payload models.TracePayload) []models.W
 	}
 
 	return result
+}
+
+func (e *Engine) detectLowRetrievalScore(payload models.TracePayload) []models.Warning {
+	result := make([]models.Warning, 0)
+
+	for _, span := range payload.Spans {
+		if span.Type != "retrieval" {
+			continue
+		}
+
+		chunks := extractRetrievedChunksFromSpan(span)
+		if len(chunks) == 0 {
+			continue
+		}
+
+		threshold := getLowScoreThreshold(span)
+
+		scoredChunks := make([]models.JSONMap, 0)
+		maxScore := -1.0
+		scoredCount := 0
+
+		for _, chunk := range chunks {
+			if chunk.Score == nil {
+				continue
+			}
+
+			score := *chunk.Score
+			scoredCount++
+
+			if score > maxScore {
+				maxScore = score
+			}
+
+			scoredChunks = append(scoredChunks, models.JSONMap{
+				"chunk_id": chunk.ChunkID,
+				"score":    score,
+			})
+		}
+
+		// If no score was recorded, skip this rule.
+		// Some retrievers do not expose normalized relevance scores.
+		if scoredCount == 0 {
+			continue
+		}
+
+		// MVP rule:
+		// If even the best retrieved chunk is below threshold,
+		// retrieval quality is probably weak.
+		if maxScore >= threshold {
+			continue
+		}
+
+		spanID := span.SpanID
+
+		result = append(result, models.Warning{
+			WarningID: newWarningID(),
+			TraceID:   payload.Trace.TraceID,
+			SpanID:    &spanID,
+			Type:      TypeLowRetrievalScore,
+			Severity:  SeverityWarning,
+			Message:   "Retrieved chunks have low relevance scores.",
+			Details: models.JSONMap{
+				"rule":         TypeLowRetrievalScore,
+				"span_id":      span.SpanID,
+				"span_name":    span.Name,
+				"threshold":    threshold,
+				"max_score":    maxScore,
+				"chunk_scores": scoredChunks,
+				"reason":       "highest retrieved chunk score is below threshold",
+			},
+			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		})
+	}
+
+	return result
+}
+
+func (e *Engine) detectDuplicateChunks(payload models.TracePayload) []models.Warning {
+	chunks := extractRetrievedChunks(payload.Spans)
+	if len(chunks) < 2 {
+		return nil
+	}
+
+	groups := map[string][]retrievedChunk{}
+
+	for _, chunk := range chunks {
+		normalized := normalizeChunkText(chunk.Text)
+		if normalized == "" {
+			continue
+		}
+
+		groups[normalized] = append(groups[normalized], chunk)
+	}
+
+	duplicateGroups := make([]models.JSONMap, 0)
+
+	for normalizedText, group := range groups {
+		if len(group) < 2 {
+			continue
+		}
+
+		chunkIDs := make([]string, 0, len(group))
+		spanIDs := make([]string, 0, len(group))
+
+		for _, chunk := range group {
+			chunkIDs = append(chunkIDs, chunk.ChunkID)
+			spanIDs = append(spanIDs, chunk.SpanID)
+		}
+
+		duplicateGroups = append(duplicateGroups, models.JSONMap{
+			"normalized_text": normalizedText,
+			"chunk_ids":       chunkIDs,
+			"span_ids":        spanIDs,
+		})
+	}
+
+	if len(duplicateGroups) == 0 {
+		return nil
+	}
+
+	return []models.Warning{
+		{
+			WarningID: newWarningID(),
+			TraceID:   payload.Trace.TraceID,
+			SpanID:    nil,
+			Type:      TypeDuplicateChunks,
+			Severity:  SeverityWarning,
+			Message:   "Retrieved chunks contain duplicate text.",
+			Details: models.JSONMap{
+				"rule":             TypeDuplicateChunks,
+				"duplicate_groups": duplicateGroups,
+				"reason":           "multiple retrieved chunks have identical normalized text",
+			},
+			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		},
+	}
 }
 
 func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.Warning {
@@ -126,13 +270,99 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 	}
 }
 
+func (e *Engine) detectAnswerNotGrounded(payload models.TracePayload) []models.Warning {
+	answer, llmSpanID := extractFinalAnswer(payload)
+	answer = strings.TrimSpace(answer)
+
+	if answer == "" {
+		return nil
+	}
+
+	if containsUncertaintyPhrase(answer) {
+		return nil
+	}
+
+	chunks := extractRetrievedChunks(payload.Spans)
+
+	// Case 1:
+	// The model gave a concrete answer even though retrieval returned no chunks.
+	if len(chunks) == 0 {
+		return []models.Warning{
+			{
+				WarningID: newWarningID(),
+				TraceID:   payload.Trace.TraceID,
+				SpanID:    llmSpanID,
+				Type:      TypeAnswerNotGrounded,
+				Severity:  SeverityWarning,
+				Message:   "Answer may not be grounded because no retrieved chunks were available.",
+				Details: models.JSONMap{
+					"rule":   TypeAnswerNotGrounded,
+					"answer": answer,
+					"reason": "final answer was produced without retrieved chunks",
+				},
+				CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+			},
+		}
+	}
+
+	// Case 2:
+	// Simplified MVP grounding check:
+	// If the answer contains concrete refund-window day values that do not
+	// appear in retrieved chunks, flag it.
+	answerDays := extractRefundWindowDays(answer)
+	if len(answerDays) == 0 {
+		return nil
+	}
+
+	contextDays := map[string]bool{}
+	for _, chunk := range chunks {
+		for _, day := range extractRefundWindowDays(chunk.Text) {
+			contextDays[day] = true
+		}
+	}
+
+	unsupportedDays := make([]string, 0)
+	for _, day := range answerDays {
+		if !contextDays[day] {
+			unsupportedDays = append(unsupportedDays, day)
+		}
+	}
+
+	if len(unsupportedDays) == 0 {
+		return nil
+	}
+
+	sort.Strings(unsupportedDays)
+
+	return []models.Warning{
+		{
+			WarningID: newWarningID(),
+			TraceID:   payload.Trace.TraceID,
+			SpanID:    llmSpanID,
+			Type:      TypeAnswerNotGrounded,
+			Severity:  SeverityWarning,
+			Message:   "Answer contains claims not found in retrieved chunks.",
+			Details: models.JSONMap{
+				"rule":             TypeAnswerNotGrounded,
+				"answer":           answer,
+				"unsupported_days": unsupportedDays,
+				"reason":           "answer contains day values that do not appear in retrieved chunks",
+			},
+			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		},
+	}
+}
+
 type retrievedChunk struct {
 	ChunkID  string         `json:"chunk_id"`
 	ID       string         `json:"id"`
 	Text     string         `json:"text"`
 	Content  string         `json:"content"`
-	Score    float64        `json:"score"`
+	Score    *float64       `json:"score"`
 	Metadata models.JSONMap `json:"metadata"`
+
+	SpanID   string
+	SpanName string
 }
 
 func extractRetrievedChunks(spans []models.Span) []retrievedChunk {
@@ -156,6 +386,11 @@ func extractRetrievedChunksFromSpan(span models.Span) []retrievedChunk {
 	result = append(result, chunksFromMap(span.Metadata)...)
 
 	normalizeChunks(result)
+
+	for i := range result {
+		result[i].SpanID = span.SpanID
+		result[i].SpanName = span.Name
+	}
 
 	return result
 }
@@ -194,13 +429,25 @@ func parseChunks(raw any) []retrievedChunk {
 	}
 
 	var chunks []retrievedChunk
-	if err := json.Unmarshal(data, &chunks); err != nil {
-		return nil
+	if err := json.Unmarshal(data, &chunks); err == nil {
+		normalizeChunks(chunks)
+		return chunks
 	}
 
-	normalizeChunks(chunks)
+	// Fallback for simple []string contexts.
+	var texts []string
+	if err := json.Unmarshal(data, &texts); err == nil {
+		result := make([]retrievedChunk, 0, len(texts))
+		for i, text := range texts {
+			result = append(result, retrievedChunk{
+				ChunkID: fmt.Sprintf("chunk_%d", i+1),
+				Text:    text,
+			})
+		}
+		return result
+	}
 
-	return chunks
+	return nil
 }
 
 func normalizeChunks(chunks []retrievedChunk) {
@@ -217,6 +464,38 @@ func normalizeChunks(chunks []retrievedChunk) {
 			chunks[i].Text = chunks[i].Content
 		}
 	}
+}
+
+func getLowScoreThreshold(span models.Span) float64 {
+	if span.Metadata == nil {
+		return DefaultLowScoreThreshold
+	}
+
+	raw, ok := span.Metadata["low_score_threshold"]
+	if !ok {
+		return DefaultLowScoreThreshold
+	}
+
+	switch value := raw.(type) {
+	case float64:
+		return value
+	case float32:
+		return float64(value)
+	case int:
+		return float64(value)
+	default:
+		return DefaultLowScoreThreshold
+	}
+}
+
+func normalizeChunkText(text string) string {
+	text = strings.ToLower(strings.TrimSpace(text))
+	if text == "" {
+		return ""
+	}
+
+	fields := strings.Fields(text)
+	return strings.Join(fields, " ")
 }
 
 var refundWindowRegex = regexp.MustCompile(`(?i)\b(\d{1,3})\s*[- ]?\s*days?\b`)
@@ -244,6 +523,82 @@ func extractRefundWindowDays(text string) []string {
 	sort.Strings(result)
 
 	return result
+}
+
+func extractFinalAnswer(payload models.TracePayload) (string, *string) {
+	if payload.Trace.Output != nil {
+		if answer := stringFromMap(payload.Trace.Output, "answer"); answer != "" {
+			return answer, nil
+		}
+
+		if response := stringFromMap(payload.Trace.Output, "response"); response != "" {
+			return response, nil
+		}
+	}
+
+	// Prefer the last LLM span output.
+	for i := len(payload.Spans) - 1; i >= 0; i-- {
+		span := payload.Spans[i]
+		if span.Type != "llm" {
+			continue
+		}
+
+		if span.Output == nil {
+			continue
+		}
+
+		spanID := span.SpanID
+
+		if answer := stringFromMap(span.Output, "answer"); answer != "" {
+			return answer, &spanID
+		}
+
+		if response := stringFromMap(span.Output, "response"); response != "" {
+			return response, &spanID
+		}
+	}
+
+	return "", nil
+}
+
+func stringFromMap(value models.JSONMap, key string) string {
+	if value == nil {
+		return ""
+	}
+
+	raw, ok := value[key]
+	if !ok {
+		return ""
+	}
+
+	text, ok := raw.(string)
+	if !ok {
+		return ""
+	}
+
+	return text
+}
+
+func containsUncertaintyPhrase(answer string) bool {
+	normalized := strings.ToLower(answer)
+
+	phrases := []string{
+		"i could not find",
+		"not enough information",
+		"insufficient information",
+		"i don't know",
+		"cannot determine",
+		"unable to determine",
+		"no information",
+	}
+
+	for _, phrase := range phrases {
+		if strings.Contains(normalized, phrase) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func newWarningID() string {

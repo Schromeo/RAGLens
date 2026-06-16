@@ -1,18 +1,16 @@
 # Current Task
 
 ## Current Focus
-Expand the RAGLens diagnosis layer beyond the first shipped rule.
+Build the Real Local RAG Demo milestone.
 
 The Python SDK, Go collector, SQLite persistence, and initial React Dashboard are now working.
 
 RAGLens can generate a trace from the Python SDK, send it to the local collector, persist it in SQLite, and display it in the browser dashboard.
 
+The Warning Engine / Diagnosis Layer MVP is complete.
+
 ## Current Goal
-Add the next set of lightweight warning rules on top of the working warning pipeline.
-
-The goal is not to build a perfect evaluator.
-
-The goal is to surface obvious RAG debugging signals in the dashboard.
+Replace dummy retrieval chunks with a real local retrieval pipeline while preserving the existing trace schema and diagnosis flow.
 
 ## Current System Status
 Completed so far:
@@ -36,11 +34,17 @@ Completed so far:
 - Retrieved chunk viewer implemented
 - LLM prompt/response viewer implemented
 - Warning Engine implemented in collector
-- `conflicting_chunks` rule implemented
+- Warning rules implemented:
+  - `no_retrieved_chunks`
+  - `low_retrieval_score`
+  - `duplicate_chunks`
+  - `conflicting_chunks`
+  - simplified `answer_not_grounded`
 - Warning persistence after trace ingestion implemented
 - Dashboard real warning cards implemented
 - Dashboard null-warning crash fixed
 - `.gitignore` updated for local artifacts
+- Warning smoke test implemented: `sdk/python/examples/warning_rules_demo.py`
 
 ## Current Working Path
 
@@ -62,45 +66,50 @@ React Dashboard
 
 ## Current Milestone
 
-Ship additional warning rules on top of the first end-to-end warning flow.
+Real Local RAG Demo.
 
-The warning engine already inspects trace payloads after ingestion and inserts warning records into SQLite.
+The warning engine and dashboard warning rendering path are already validated.
 
 ## Files Likely To Change Next
+
+Python demo / retrieval prototype:
+
+- `sdk/python/examples/`
+- `examples/refund-policy-demo/docs/`
 
 Go Collector:
 
 - `collector/go/internal/warnings/engine.go`
-- `collector/go/internal/storage/sqlite.go`
-- `collector/go/internal/api/handlers.go`
-- `collector/go/internal/models/models.go`
+
+Optional collector updates only if needed for real retrieval metadata compatibility.
 
 Dashboard:
 
 - `dashboard/web/src/pages/TraceDetailPage.tsx`
-- `dashboard/web/src/components/WarningCard.tsx`
 
-Demo / SDK:
-
-- `sdk/python/examples/refund_policy_demo.py`
+Mostly validation; no major UI changes required for this milestone.
 
 Documentation:
 
+- `README.md`
+- `docs/ai-context/ROADMAP.md`
 - `docs/ai-context/DEVLOG.md`
 - `docs/ai-context/DECISIONS.md`
-- `docs/architecture/SYSTEM_ARCHITECTURE.md`
 
 ## Initial Warning Rules
 
-Start with simple heuristic rules:
+Warning rules implemented in v0.1:
 
-- [ ] `no_retrieved_chunks`
-- [ ] `low_retrieval_score`
-- [ ] `duplicate_chunks`
+- [x] `no_retrieved_chunks`
+- [x] `low_retrieval_score`
+- [x] `duplicate_chunks`
 - [x] `conflicting_chunks`
-- [ ] simplified `answer_not_grounded`
+- [x] simplified `answer_not_grounded`
 
-The refund policy demo now triggers `conflicting_chunks` because retrieved chunks contain both 30 days and 14 days refund windows.
+Smoke test entrypoint:
+
+- `python -m examples.warning_rules_demo all`
+- expected result: each case returns `warnings_generated: 1`
 
 ## Key Decision
 
@@ -114,15 +123,19 @@ The Python SDK should remain lightweight and focused on instrumentation.
 
 ## Next Step
 
-Add the next warning rules under:
+Implement and validate a real local retrieval loop:
 
-- `collector/go/internal/warnings`
+- Add local source docs.
+- Chunk the docs.
+- Retrieve top-k with real scores.
+- Instrument with existing `trace()` API.
+- Flush to collector and inspect warnings in dashboard.
 
-The warning engine is already called from `POST /api/traces` after saving the trace payload.
+Keep LangChain/LlamaIndex integration deferred until this milestone is complete.
 
 The next successful validation should be:
 
-1. Run the refund policy demo.
-2. Send the trace to the collector.
-3. Collector generates warnings for additional rule types when conditions match.
-4. Dashboard continues to display warning cards in the trace detail page.
+1. Run real local retrieval demo.
+2. Send trace via SDK `flush()` to collector on `:4319`.
+3. Collector persists traces, spans, and warnings.
+4. Dashboard trace detail displays real chunks, scores, and warnings.

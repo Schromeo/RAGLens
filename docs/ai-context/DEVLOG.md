@@ -1,5 +1,44 @@
 # Devlog
 
+## 2026-06-15 (Docs Sync)
+
+### Completed
+
+- Updated core docs to reflect that Warning Engine / Diagnosis Layer MVP is complete.
+- Synced status across README, roadmap, handoff, current task, architecture, and product docs.
+- Marked Real Local RAG Demo as the next active milestone.
+
+### Notes
+
+- Warning rules now documented as implemented: `no_retrieved_chunks`, `low_retrieval_score`, `duplicate_chunks`, `conflicting_chunks`, simplified `answer_not_grounded`.
+- `sdk/python/examples/warning_rules_demo.py` documented as primary warning smoke test.
+
+## 2026-06-15
+
+### Completed
+
+- Updated `sdk/python/examples/warning_rules_demo.py` to call `print_and_flush(t)` after exiting each `with trace(...)` block.
+- Ensured all five warning-rule smoke demos finalize trace lifecycle before serialization and POST.
+
+### Validation
+
+Ran all warning demos:
+
+```bash
+cd sdk/python
+python -m examples.warning_rules_demo all
+```
+
+Observed result:
+
+- All five demos still return `warnings_generated: 1`.
+- `trace.ended_at` is now populated (no longer `null`) across all demo payloads.
+- `trace.duration_ms` is now populated as `0` for this fast local smoke run (no longer `null`).
+
+### Notes
+
+This keeps demo payload timing fields compatible with timeline rendering and future latency-oriented warning logic.
+
 ## 2026-06-13
 
 ### Completed

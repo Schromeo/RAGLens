@@ -7,7 +7,7 @@ Each version includes clear scope boundaries so RAGLens stays local-first, light
 ## Current Snapshot
 
 **Current version:** v0.1 — Local RAG Debugger MVP
-**Status:** In Progress
+**Status:** In Progress (Warning Engine MVP complete)
 
 ### Completed foundation
 
@@ -50,20 +50,23 @@ Completed so far:
 
 ### Active focus
 
-The current milestone is to expand warning coverage beyond the first shipped rule.
+The current milestone is Real Local RAG Demo.
 
 Immediate goals:
 
-* Add additional warning rules in the Go collector
-* Keep warning persistence in SQLite stable
-* Keep warning responses in trace detail API stable
-* Improve warning signal quality and dashboard readability
+* Replace mock chunks with real local retrieval output while keeping the same trace schema.
+* Add local markdown/text documents for retrieval input.
+* Implement simple chunking.
+* Implement a transparent local retriever first (TF-IDF + cosine, or sentence-transformers + cosine).
+* Generate real chunks and scores, send through existing SDK -> collector -> SQLite -> dashboard flow.
+* Confirm existing warning rules still fire correctly on real retrieval data.
+* Defer LangChain/LlamaIndex adapters until after this milestone is validated.
 
 ---
 
 ## v0.1 — Local RAG Debugger MVP
 
-**Status:** In Progress
+**Status:** In Progress (Diagnosis Layer MVP complete)
 
 ### Goal
 
@@ -102,11 +105,17 @@ Let a developer trace a RAG pipeline, store traces locally, and inspect the pipe
 
 #### Warning engine
 
-* [ ] `no_retrieved_chunks`
-* [ ] `low_retrieval_score`
-* [ ] `duplicate_chunks`
+* [x] `no_retrieved_chunks`
+* [x] `low_retrieval_score`
+* [x] `duplicate_chunks`
 * [x] `conflicting_chunks`
-* [ ] simplified `answer_not_grounded`
+* [x] simplified `answer_not_grounded`
+
+Validation smoke test:
+
+* `sdk/python/examples/warning_rules_demo.py`
+* supports `all` and per-rule runs
+* expected result: each case returns `warnings_generated: 1`
 
 ### Exit Criteria
 
@@ -137,8 +146,8 @@ Make RAGLens fast to try, simple to run, and pleasant for first-time users.
 * CLI command: `raglens ui`
 * Local reset command for demo data
 * Raw OpenAI example
-* LangChain example
-* LlamaIndex example
+
+Note: LangChain and LlamaIndex adapters remain deferred until Real Local RAG Demo is complete and validated.
 
 ---
 

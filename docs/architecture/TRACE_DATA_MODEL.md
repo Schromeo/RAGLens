@@ -204,11 +204,18 @@ They are lightweight debugging signals.
 
 Warning generation is implemented in the Go collector.
 
-Current baseline rule:
+Current implemented MVP rules:
 
+* `no_retrieved_chunks`
+* `low_retrieval_score` (default threshold `0.5`, overridable by retrieval span metadata)
+* `duplicate_chunks`
 * `conflicting_chunks`
+* simplified `answer_not_grounded`
 
-The refund policy demo validates this rule by returning conflicting `30 days` vs `14 days` chunk evidence, which generates one warning end-to-end.
+Primary smoke test:
+
+* `sdk/python/examples/warning_rules_demo.py`
+* each demo case is expected to return `warnings_generated: 1`
 
 ---
 

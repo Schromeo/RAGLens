@@ -103,7 +103,12 @@ React Dashboard
   - `GET /api/traces/{trace_id}`
   - SQLite persistence for traces and spans
   - Warning Engine runs after trace persistence
-  - First diagnosis rule: `conflicting_chunks`
+  - Implemented diagnosis rules:
+    - `no_retrieved_chunks`
+    - `low_retrieval_score` (default threshold `0.5`, overridable via span metadata)
+    - `duplicate_chunks`
+    - `conflicting_chunks`
+    - simplified `answer_not_grounded`
   - Warning persistence in SQLite
 - React Dashboard
   - trace list page
@@ -113,23 +118,56 @@ React Dashboard
   - LLM prompt/response viewer
   - real warning cards on trace detail
 
-The refund policy demo successfully sends traces from the Python SDK to the local collector and displays them in the dashboard.
+- Warning smoke tests
+  - `sdk/python/examples/warning_rules_demo.py`
+  - one demo function per warning rule
+  - supports running all demos or a single demo case
+  - expected result per case: `warnings_generated: 1`
+
+The local inspection loop is complete and validated end-to-end:
+
+```text
+Python SDK
+  ↓
+t.flush()
+  ↓
+POST /api/traces
+  ↓
+Go Collector (:4319)
+  ↓
+SQLite (traces, spans, warnings)
+  ↓
+GET /api/traces/{trace_id}
+  ↓
+React Dashboard warning cards
+```
+
+Important implementation detail:
+
+- In `warning_rules_demo.py`, `t.flush()` is called after exiting the `with trace(...)` block so `ended_at` and `duration_ms` are finalized before payload submission.
 
 ### Current Known Issues / Notes
 
-- Warning coverage is still partial in v0.1.
-- Only `conflicting_chunks` is implemented so far.
 - Trace duration may show `0ms` in the mock demo because the demo executes instantly.
 - Local artifacts such as `node_modules`, SQLite database files, and sample trace files should stay ignored by git.
 
 ### Next Major Step
 
-Expand warning coverage in the existing warning engine.
+Real Local RAG Demo.
 
-Initial warning rules should include:
+Goal:
 
-- `no_retrieved_chunks`
-- `low_retrieval_score`
-- `duplicate_chunks`
-- `conflicting_chunks` (completed)
-- simplified `answer_not_grounded`
+- Replace dummy retrieval chunks with real local retrieval while keeping the same trace schema and warning pipeline.
+
+Suggested scope:
+
+- Add local markdown/text documents.
+- Implement simple chunking.
+- Implement a transparent local retriever first:
+  - TF-IDF + cosine similarity, or
+  - sentence-transformers + cosine similarity.
+- Generate real retrieval chunks and scores.
+- Send traces through existing Python SDK -> collector -> SQLite -> dashboard path.
+- Verify existing warning rules continue to work with real retrieval outputs.
+
+Do not jump directly to LangChain/LlamaIndex adapters before this milestone is validated.

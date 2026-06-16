@@ -59,7 +59,12 @@ Current tables:
 Note:
 
 - Warning generation is implemented in the Go collector.
-- The first live diagnosis rule is `conflicting_chunks`.
+- Warning Engine / Diagnosis Layer MVP is complete with:
+  - `no_retrieved_chunks`
+  - `low_retrieval_score` (default threshold `0.5`, overridable via span metadata)
+  - `duplicate_chunks`
+  - `conflicting_chunks`
+  - simplified `answer_not_grounded`
 
 ### React Dashboard
 
@@ -86,6 +91,12 @@ It reads collector APIs and displays:
 7. Collector stores generated warnings in SQLite.
 8. Dashboard fetches traces from the collector.
 9. Developer inspects spans and warnings in the browser.
+
+Primary smoke test path:
+
+- `sdk/python/examples/warning_rules_demo.py`
+- run all or single-rule demos
+- expected per-case collector response: `warnings_generated: 1`
 
 ## Warning Engine Flow
 

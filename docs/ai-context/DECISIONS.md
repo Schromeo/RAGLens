@@ -124,3 +124,57 @@ Current baseline:
 
 - First live rule: `conflicting_chunks`
 - Demo validation: refund policy chunks with conflicting `30 days` and `14 days` windows generate one warning end-to-end.
+
+---
+
+## 2026-06-15 — Diagnosis Layer MVP marked complete
+
+### Decision
+
+Mark the Warning Engine / Diagnosis Layer MVP as complete for v0.1.
+
+### Reason
+
+The local end-to-end loop is validated:
+
+- Python SDK `trace()` instrumentation and `flush()`
+- `POST /api/traces` ingestion on collector `:4319`
+- SQLite persistence for traces, spans, and warnings
+- warning generation in collector
+- `GET /api/traces/{trace_id}` returns warning records
+- React dashboard renders real warning cards
+
+Implemented warning rules in MVP:
+
+- `no_retrieved_chunks`
+- `low_retrieval_score`
+- `duplicate_chunks`
+- `conflicting_chunks`
+- simplified `answer_not_grounded`
+
+### Outcome
+
+Shift active focus from warning rule expansion to Real Local RAG Demo.
+
+---
+
+## 2026-06-15 — Sequence real retrieval before framework adapters
+
+### Decision
+
+Do Real Local RAG Demo before adding LangChain/LlamaIndex adapters.
+
+### Reason
+
+- Need to validate schema and warning quality on real retrieval outputs first.
+- Keep MVP local-first and transparent.
+- Avoid adding adapter complexity before core behavior is proven.
+
+### Outcome
+
+Next milestone scope:
+
+- local docs
+- simple chunking
+- transparent local retrieval (TF-IDF + cosine, or sentence-transformers + cosine)
+- SDK instrumentation and warning validation on real retrieval traces
