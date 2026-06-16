@@ -151,23 +151,39 @@ Important implementation detail:
 - Trace duration may show `0ms` in the mock demo because the demo executes instantly.
 - Local artifacts such as `node_modules`, SQLite database files, and sample trace files should stay ignored by git.
 
+### Real Local RAG Demo Milestone
+
+Status: Completed
+
+Completed:
+
+- Added local markdown policy documents.
+- Implemented local document loader.
+- Implemented deterministic chunking.
+- Implemented TF-IDF + cosine similarity retriever.
+- Added simple local answerer.
+- Added demo case matrix.
+- Integrated real local retrieval output with existing Python SDK trace schema.
+- Sent traces to Go Collector on port `4319`.
+- Verified traces in Dashboard.
+- Verified existing warning rules trigger on real retrieval output.
+
+Demo commands:
+
+```powershell
+# terminal 1
+cd collector/go
+go run ./cmd/raglens-collector
+
+# terminal 2
+cd sdk/python
+$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+python -m examples.local_rag_demo.run_demo inspect
+python -m examples.local_rag_demo.run_demo retrieve "How can I reset my password?"
+python -m examples.local_rag_demo.run_demo trace duplicate
+python -m examples.local_rag_demo.run_demo trace-all
+```
+
 ### Next Major Step
 
-Real Local RAG Demo.
-
-Goal:
-
-- Replace dummy retrieval chunks with real local retrieval while keeping the same trace schema and warning pipeline.
-
-Suggested scope:
-
-- Add local markdown/text documents.
-- Implement simple chunking.
-- Implement a transparent local retriever first:
-  - TF-IDF + cosine similarity, or
-  - sentence-transformers + cosine similarity.
-- Generate real retrieval chunks and scores.
-- Send traces through existing Python SDK -> collector -> SQLite -> dashboard path.
-- Verify existing warning rules continue to work with real retrieval outputs.
-
-Do not jump directly to LangChain/LlamaIndex adapters before this milestone is validated.
+Improve warning explanation quality, add tests for warning rules and demo cases, then evaluate a semantic retriever baseline before adapter work.

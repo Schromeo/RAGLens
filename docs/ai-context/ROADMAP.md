@@ -7,7 +7,7 @@ Each version includes clear scope boundaries so RAGLens stays local-first, light
 ## Current Snapshot
 
 **Current version:** v0.1 — Local RAG Debugger MVP
-**Status:** In Progress (Warning Engine MVP complete)
+**Status:** In Progress (Warning Engine MVP + Real Local RAG Demo complete)
 
 ### Completed foundation
 
@@ -50,17 +50,15 @@ Completed so far:
 
 ### Active focus
 
-The current milestone is Real Local RAG Demo.
+Real Local RAG Demo is complete.
 
 Immediate goals:
 
-* Replace mock chunks with real local retrieval output while keeping the same trace schema.
-* Add local markdown/text documents for retrieval input.
-* Implement simple chunking.
-* Implement a transparent local retriever first (TF-IDF + cosine, or sentence-transformers + cosine).
-* Generate real chunks and scores, send through existing SDK -> collector -> SQLite -> dashboard flow.
-* Confirm existing warning rules still fire correctly on real retrieval data.
-* Defer LangChain/LlamaIndex adapters until after this milestone is validated.
+* Improve warning explanation quality and details display in dashboard.
+* Add unit tests for warning rules and local retrieval demo cases.
+* Expand real local RAG instrumentation coverage.
+* Evaluate semantic retriever baseline (sentence-transformers + cosine) without breaking trace schema.
+* Keep LangChain/LlamaIndex adapters deferred until test coverage is stable.
 
 ---
 
@@ -83,6 +81,7 @@ Let a developer trace a RAG pipeline, store traces locally, and inspect the pipe
 * [x] Trace payload generation
 * [x] SDK `flush()` to local collector
 * [x] Refund policy demo
+* [x] Real local RAG demo (local docs + deterministic chunking + TF-IDF retrieval)
 
 #### Collector and local storage
 

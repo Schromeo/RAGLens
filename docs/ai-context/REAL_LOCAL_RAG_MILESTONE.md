@@ -1,7 +1,7 @@
 # Real Local RAG Demo Milestone
 
 ## Status
-Active
+Completed
 
 ## Goal
 Replace mock retrieval chunks with real local retrieval output while keeping the existing RAGLens trace schema and warning pipeline unchanged.
@@ -36,14 +36,18 @@ Primary smoke test:
 - `python -m examples.warning_rules_demo all`
 - Expected: each case returns `warnings_generated: 1`.
 
-## Scope
+## Completed
 
-1. Local documents in `sdk/python/examples/local_rag_demo/docs`.
-2. Deterministic local chunking.
-3. Transparent local retriever first (TF-IDF + cosine similarity).
-4. Real top-k chunks and relevance scores.
-5. Trace emission through current Python SDK API.
-6. Collector persistence and warning generation unchanged.
+- Added local markdown policy documents.
+- Implemented local document loader.
+- Implemented deterministic chunking.
+- Implemented TF-IDF + cosine similarity retriever.
+- Added simple local answerer.
+- Added demo case matrix.
+- Integrated real local retrieval output with existing Python SDK trace schema.
+- Sent traces to Go Collector on port `4319`.
+- Verified traces in Dashboard.
+- Verified existing warning rules trigger on real retrieval output.
 
 ## Non-Goals
 
@@ -51,13 +55,7 @@ Primary smoke test:
 - Do not introduce LlamaIndex adapters in this milestone.
 - Do not change trace/warning schema unless a blocker appears.
 
-## Exit Criteria
-
-1. A real query retrieves real local chunks with scores.
-2. Trace payload includes retrieval chunks and LLM output in existing schema.
-3. Collector stores traces/spans/warnings successfully.
-4. Dashboard displays real warnings on trace detail.
-5. Existing warning smoke test still passes.
+## Demo Commands
 
 ## Runbook
 
@@ -68,12 +66,23 @@ go run ./cmd/raglens-collector
 
 # terminal 2
 cd sdk/python
+$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
 python -m examples.local_rag_demo.run_demo inspect
 python -m examples.local_rag_demo.run_demo retrieve "How can I reset my password?"
+python -m examples.local_rag_demo.run_demo trace duplicate
+python -m examples.local_rag_demo.run_demo trace-all
 python -m examples.warning_rules_demo all
 ```
 
-## Risks
+## Expected Warning-Target Cases
+
+- `no_match` -> `no_retrieved_chunks`
+- `low_score` -> `low_retrieval_score`
+- `duplicate` -> `duplicate_chunks`
+- `conflict` -> `conflicting_chunks`
+- `hallucinated` -> `answer_not_grounded`
+
+## Risks (Observed and Remaining)
 
 - Keyword-based retrieval may miss semantically similar phrasing.
 - Character chunking can split facts at boundaries.

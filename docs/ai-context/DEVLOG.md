@@ -1,5 +1,27 @@
 # Devlog
 
+## 2026-06-15 (Real Local RAG Milestone Completed)
+
+### Completed
+
+- Marked Real Local RAG Demo milestone as completed across milestone, roadmap, task, and handoff docs.
+- Captured completed implementation scope:
+  - local markdown policy documents
+  - local document loader
+  - deterministic chunking
+  - TF-IDF + cosine retriever
+  - simple local answerer
+  - demo case matrix
+  - traced integration through existing SDK schema
+  - collector ingestion on `:4319`
+  - dashboard verification
+  - warning trigger verification on real retrieval output
+
+### Notes
+
+- Added explicit demo command runbook to the milestone and handoff docs.
+- Shifted active focus to post-milestone hardening (warning explanations, tests, semantic retriever evaluation).
+
 ## 2026-06-15 (Real Local RAG Docs)
 
 ### Completed

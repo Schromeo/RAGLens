@@ -1,16 +1,17 @@
 # Current Task
 
 ## Current Focus
-Build the Real Local RAG Demo milestone.
+Post-Real Local RAG Demo hardening and quality improvements.
 
 The Python SDK, Go collector, SQLite persistence, and initial React Dashboard are now working.
 
 RAGLens can generate a trace from the Python SDK, send it to the local collector, persist it in SQLite, and display it in the browser dashboard.
 
 The Warning Engine / Diagnosis Layer MVP is complete.
+The Real Local RAG Demo milestone is complete.
 
 ## Current Goal
-Replace dummy retrieval chunks with a real local retrieval pipeline while preserving the existing trace schema and diagnosis flow.
+Improve warning explainability, add tests, and stabilize the real local retrieval path for iteration.
 
 ## Current System Status
 Completed so far:
@@ -45,6 +46,14 @@ Completed so far:
 - Dashboard null-warning crash fixed
 - `.gitignore` updated for local artifacts
 - Warning smoke test implemented: `sdk/python/examples/warning_rules_demo.py`
+- Real Local RAG Demo completed:
+  - local markdown policy docs
+  - local document loader
+  - deterministic chunking
+  - TF-IDF + cosine retriever
+  - simple local answerer
+  - demo case matrix
+  - traced cases verified against collector on `:4319`
 
 ## Current Working Path
 
@@ -66,9 +75,9 @@ React Dashboard
 
 ## Current Milestone
 
-Real Local RAG Demo.
+Real Local RAG Demo (Completed).
 
-The warning engine and dashboard warning rendering path are already validated.
+Current active work is follow-up hardening.
 
 ## Files Likely To Change Next
 
@@ -123,13 +132,12 @@ The Python SDK should remain lightweight and focused on instrumentation.
 
 ## Next Step
 
-Implement and validate a real local retrieval loop:
+Implement post-milestone hardening tasks:
 
-- Add local source docs.
-- Chunk the docs.
-- Retrieve top-k with real scores.
-- Instrument with existing `trace()` API.
-- Flush to collector and inspect warnings in dashboard.
+- Improve warning detail display and wording.
+- Add unit tests for warning rules.
+- Add retrieval demo assertions for expected warning targets.
+- Evaluate semantic retrieval baseline while preserving existing trace schema.
 
 Keep LangChain/LlamaIndex integration deferred until this milestone is complete.
 
