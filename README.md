@@ -41,6 +41,7 @@ And inspect the full RAG trace locally.
 v0.1 (Local RAG Debugger MVP) is active.
 
 The Warning Engine / Diagnosis Layer MVP is complete.
+The Real Local RAG Demo milestone is complete.
 
 Implemented local inspection loop:
 
@@ -74,6 +75,27 @@ Expected smoke result: each demo returns `warnings_generated: 1`.
 
 Implementation detail: `warning_rules_demo.py` flushes after exiting the `trace()` context manager so `ended_at` and `duration_ms` are finalized before sending.
 
+Real local retrieval demo:
+
+```powershell
+# terminal 1
+cd collector/go
+go run ./cmd/raglens-collector
+
+# terminal 2
+cd sdk/python
+$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+python -m examples.local_rag_demo.run_demo inspect
+python -m examples.local_rag_demo.run_demo retrieve "How can I reset my password?"
+python -m examples.local_rag_demo.run_demo trace-all
+```
+
+Current focus after this milestone:
+
+- Improve warning explanation quality and dashboard details.
+- Add unit tests for warning rules and demo cases.
+- Evaluate semantic retrieval baseline (sentence-transformers + cosine) without breaking current trace schema.
+
 # Roadmap
 - Python SDK
 - Local collector
@@ -81,7 +103,8 @@ Implementation detail: `warning_rules_demo.py` flushes after exiting the `trace(
 - Trace detail page
 - Retrieved chunk viewer
 - Basic RAG warnings (MVP complete)
-- Real Local RAG Demo (active)
+- Real Local RAG Demo (completed)
+- Warning explanation and testing hardening (active)
 - LangChain / LlamaIndex examples
 - Eval dataset export
 - Agent/tool call tracing
