@@ -15,6 +15,7 @@ import (
 
 const (
 	TypeConflictingChunks = "conflicting_chunks"
+	TypeNoRetrievedChunks = "no_retrieved_chunks"
 
 	SeverityInfo    = "info"
 	SeverityWarning = "warning"
@@ -30,7 +31,43 @@ func NewEngine() *Engine {
 func (e *Engine) Generate(payload models.TracePayload) []models.Warning {
 	result := make([]models.Warning, 0)
 
+	result = append(result, e.detectNoRetrievedChunks(payload)...)
 	result = append(result, e.detectConflictingChunks(payload)...)
+
+	return result
+}
+
+func (e *Engine) detectNoRetrievedChunks(payload models.TracePayload) []models.Warning {
+	result := make([]models.Warning, 0)
+
+	for _, span := range payload.Spans {
+		if span.Type != "retrieval" {
+			continue
+		}
+
+		chunks := extractRetrievedChunksFromSpan(span)
+		if len(chunks) > 0 {
+			continue
+		}
+
+		spanID := span.SpanID
+
+		result = append(result, models.Warning{
+			WarningID: newWarningID(),
+			TraceID:   payload.Trace.TraceID,
+			SpanID:    &spanID,
+			Type:      TypeNoRetrievedChunks,
+			Severity:  SeverityWarning,
+			Message:   "Retrieval span returned no chunks.",
+			Details: models.JSONMap{
+				"rule":      TypeNoRetrievedChunks,
+				"span_id":   span.SpanID,
+				"span_name": span.Name,
+				"reason":    "retrieval span output did not contain any retrieved chunks",
+			},
+			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		})
+	}
 
 	return result
 }
@@ -106,9 +143,17 @@ func extractRetrievedChunks(spans []models.Span) []retrievedChunk {
 			continue
 		}
 
-		result = append(result, chunksFromMap(span.Output)...)
-		result = append(result, chunksFromMap(span.Metadata)...)
+		result = append(result, extractRetrievedChunksFromSpan(span)...)
 	}
+
+	return result
+}
+
+func extractRetrievedChunksFromSpan(span models.Span) []retrievedChunk {
+	result := make([]retrievedChunk, 0)
+
+	result = append(result, chunksFromMap(span.Output)...)
+	result = append(result, chunksFromMap(span.Metadata)...)
 
 	normalizeChunks(result)
 
