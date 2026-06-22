@@ -66,9 +66,9 @@ Do not build a full AI infra platform first.
 Build a polished, useful, easy-to-run RAG debugging tool first.
 
 ## Current Implementation Status
-RAGLens now has a working local MVP skeleton.
+RAGLens v0.1 MVP is complete and validated end-to-end.
 
-The following path has been implemented and validated:
+The full production path has been implemented and tested:
 
 ```text
 Python SDK
@@ -77,16 +77,20 @@ t.flush()
   ↓
 POST /api/traces
   ↓
-Go Collector
+Go Collector (:4319)
   ↓
-SQLite
+SQLite (traces, spans, warnings)
   ↓
 GET /api/traces
   ↓
 GET /api/traces/{trace_id}
   ↓
 React Dashboard
+  ↓
+Real warning cards, trace detail, chunk viewer
 ```
+
+**v0.1 Status: COMPLETE AND RELEASED**
 
 ### Completed Implementation
 
@@ -145,6 +149,20 @@ React Dashboard warning cards
 Important implementation detail:
 
 - In `warning_rules_demo.py`, `t.flush()` is called after exiting the `with trace(...)` block so `ended_at` and `duration_ms` are finalized before payload submission.
+
+### Recent Dashboard UI Polish (2026-06-22)
+
+- Sidebar trace list: text truncation for query (2 lines) and answer (3 lines) to keep card heights uniform
+- Trace detail: Final answer moved from floating window to grid layout with Query/Duration/Warnings
+- Final answer card: inline vertical resizing with scrollable content area
+- All styling consolidated, no nested border redundancy
+
+### Known Limitations (By Design)
+
+- Local-first v0.1: no cloud sync, no auth, no multi-user workspaces
+- Retrieval baseline: TF-IDF + cosine similarity (transparent and local-first, not semantic)
+- Warning rules: simple heuristic deterministic rules, not ML-based
+- Framework support: Python SDK only in v0.1; LangChain/LlamaIndex adapters deferred to v0.2+
 
 ### Current Known Issues / Notes
 

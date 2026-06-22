@@ -2,7 +2,9 @@
 
 RAGLens is a local-first visual debugger for RAG pipelines.
 
-It helps developers inspect what happened inside a RAG application: what was retrieved, what context was sent to the model, what answer was produced, and what warning signals were detected.
+It helps developers inspect why a RAG application produced a bad answer by showing the full pipeline: retrieved chunks, retrieval scores, prompts, responses, and diagnostic warnings.
+
+RAGLens is designed for local development first. The default v0.1 demo is deterministic, API-key free, and runs entirely on your machine.
 
 ## Why RAGLens?
 
@@ -10,55 +12,61 @@ RAG applications often fail silently.
 
 A wrong answer may come from:
 
-- no retrieved context
-- weak retrieval scores
-- duplicated chunks
-- conflicting retrieved evidence
-- an answer that is not grounded in the retrieved chunks
-- the model ignoring useful context
+* no retrieved context
+* weak retrieval scores
+* duplicated chunks
+* conflicting retrieved evidence
+* stale or legacy documents
+* an answer that is not grounded in retrieved context
+* the model ignoring useful context
 
-RAGLens makes these failure modes visible locally.
+RAGLens makes these failure modes visible so developers can debug the pipeline instead of guessing what went wrong.
+
+## Screenshots
+
+### Trace overview
+
+RAGLens shows local RAG traces with warning counts and demo case labels.
+
+![Trace overview](docs/assets/screenshots/trace-list.png)
+
+### Conflicting retrieved context
+
+RAGLens can surface conflicting retrieved chunks, such as legacy and current refund policies that disagree.
+
+![Conflicting retrieved context](docs/assets/screenshots/conflict-trace-detail.png)
+
+### Answer not grounded in retrieved context
+
+RAGLens can flag answers that introduce unsupported claims even when retrieval found relevant context.
+
+![Answer not grounded](docs/assets/screenshots/answer-not-grounded.png)
 
 ## What RAGLens shows
 
 The current v0.1 MVP supports:
 
-- Python SDK tracing
-- retrieval span logging
-- LLM span logging
-- local Go collector
-- SQLite persistence
-- React dashboard
-- trace list
-- trace detail view
-- retrieved chunks viewer
-- LLM prompt / response viewer
-- warning cards
+* Python SDK tracing
+* retrieval span logging
+* LLM span logging
+* local Go collector
+* SQLite persistence
+* React dashboard
+* trace list
+* trace detail view
+* retrieved chunks viewer
+* LLM prompt / response viewer
+* warning cards
 
 Current warning rules:
 
-- `no_retrieved_chunks`
-- `low_retrieval_score`
-- `duplicate_chunks`
-- `conflicting_chunks`
-- `answer_not_grounded`
+* `no_retrieved_chunks`
+* `low_retrieval_score`
+* `duplicate_chunks`
+* `conflicting_chunks`
+* `answer_not_grounded`
 
 The v0.1 warning rules are intentionally simple and deterministic. See `docs/demo/WARNING_RULES.md` for current rule definitions and limitations.
-
-## Current status
-
-RAGLens is currently a local-first v0.1 MVP.
-
-Completed:
-
-- Python SDK tracing foundation
-- Go collector ingestion APIs
-- SQLite trace/span/warning persistence
-- React dashboard MVP
-- Warning Engine / Diagnosis Layer MVP
-- Real Local RAG Demo using local markdown docs, TF-IDF retrieval, cosine similarity, and a deterministic local answerer
-
-The default demo requires no external LLM API and no API key.
 
 ## Quickstart
 
@@ -130,6 +138,8 @@ This generates representative RAG debugging traces and sends them to the local c
 
 ### Windows PowerShell shortcuts
 
+You can also use the provided PowerShell scripts from the repository root.
+
 Start the collector:
 
 ```powershell
@@ -168,31 +178,14 @@ It uses:
 * the RAGLens Python SDK
 * the local collector and dashboard
 
-Demo guide:
+Useful demo docs:
 
-```txt
-docs/demo/LOCAL_RAG_DEMO.md
-```
+* `docs/demo/LOCAL_RAG_DEMO.md`
+* `docs/demo/SMOKE_TEST.md`
+* `docs/demo/WARNING_RULES.md`
+* `docs/demo/DASHBOARD_POLISH.md`
 
-Dashboard demo polish checklist:
-
-```txt
-docs/demo/DASHBOARD_POLISH.md
-```
-
-Smoke test guide:
-
-```txt
-docs/demo/SMOKE_TEST.md
-```
-
-Warning rule guide:
-
-```txt
-docs/demo/WARNING_RULES.md
-```
-
-Warning-focused demo cases:
+### Demo warning cases
 
 | Case           | What it simulates                        | Expected warning      |
 | -------------- | ---------------------------------------- | --------------------- |
@@ -208,16 +201,10 @@ Recommended command:
 python -m examples.local_rag_demo.run_demo trace-all
 ```
 
-On Windows PowerShell, you can also run:
+On Windows PowerShell:
 
 ```powershell
 .\scripts\demo-trace-all.ps1
-```
-
-For a basic smoke test:
-
-```powershell
-.\scripts\smoke.ps1
 ```
 
 Then open the dashboard and inspect:
@@ -225,6 +212,23 @@ Then open the dashboard and inspect:
 * `real-local-rag-conflict`
 * `real-local-rag-hallucinated`
 * `real-local-rag-no_match`
+
+## Current status
+
+RAGLens is currently a local-first v0.1 MVP.
+
+Completed:
+
+* Python SDK tracing foundation
+* Go collector ingestion APIs
+* SQLite trace/span/warning persistence
+* React dashboard MVP
+* Warning Engine / Diagnosis Layer MVP
+* Real Local RAG Demo using local markdown docs, TF-IDF retrieval, cosine similarity, and a deterministic local answerer
+* Developer Experience / Demo Packaging
+* Smoke-tested local demo flow
+
+The default demo requires no external LLM API and no API key.
 
 ## Project direction
 
@@ -234,12 +238,21 @@ The long-term direction is to grow the tracing core into an AgentOps-lite observ
 
 Near-term focus:
 
-* improve developer experience
-* package the local demo
-* polish README and demo docs
-* add smoke test instructions
-* improve dashboard demo presentation
-* keep the default path local, deterministic, and API-key free
+* v0.1 release presentation polish
+* README screenshots and GitHub presentation
+* local demo stability
+* dashboard demo readability
+* smoke-testable developer workflow
 
 Future integrations such as LangChain, LlamaIndex, and real LLM providers can be added later, but they are not required for the default v0.1 demo.
 
+## Design principles
+
+RAGLens follows a few core principles:
+
+* local-first by default
+* deterministic demo path
+* no API key required for the v0.1 demo
+* explain RAG failures instead of only displaying raw traces
+* make retrieved evidence, prompts, responses, and warnings inspectable
+* keep early warning rules simple, explicit, and documented

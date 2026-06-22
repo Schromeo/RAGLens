@@ -100,10 +100,12 @@ export default function TraceDetailPage({ traceId }: Props) {
           </div>
         </div>
 
-        <div className="summary-card">
+        <div className="summary-card summary-card-answer">
           <div className="summary-label">Final answer</div>
           <div className="summary-value summary-value-answer">
-            {answer || "No answer recorded"}
+            <div className="inline-resizable-answer">
+              {answer || "No answer recorded"}
+            </div>
           </div>
         </div>
 

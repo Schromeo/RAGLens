@@ -1,18 +1,15 @@
 # Current Task
 
 ## Current Focus
-Final smoke test and screenshot pass for demo packaging.
+v0.1 Release MVP Complete and Demo Polish.
 
-The Python SDK, Go collector, SQLite persistence, and initial React Dashboard are now working.
+The Python SDK, Go collector, SQLite persistence, React Dashboard MVP, and Real Local RAG Demo are all working and validated.
 
-RAGLens can generate a trace from the Python SDK, send it to the local collector, persist it in SQLite, and display it in the browser dashboard.
-
-The Warning Engine / Diagnosis Layer MVP is complete.
-The Real Local RAG Demo milestone is complete.
+RAGLens can generate a trace from the Python SDK, send it to the local collector, persist it in SQLite, and display it in the browser dashboard with real warnings.
 
 ## Current Goal
-Lock down a reproducible demo runbook and complete final validation before screenshot capture.
-Ensure docs, scripts, and collector/dashboard startup paths are consistent.
+Finalize v0.1 release presentation and prepare for v0.2 developer integration work.
+Complete dashboard UI polish and ensure all documentation is aligned.
 
 ## Current System Status
 Completed so far:
@@ -81,18 +78,18 @@ Real Local RAG Demo (Completed).
 Current active work is documentation and demo cleanup.
 Current active work is final smoke validation and screenshot preparation.
 
-## Files Likely To Change Next
+## Files Recently Updated
 
-Documentation:
+Documentation (synchronized with v0.1 completion):
 
-- `README.md`
-- `sdk/python/examples/local_rag_demo/README.md`
-- `docs/demo/LOCAL_RAG_DEMO.md`
-- `docs/demo/WARNING_RULES.md`
-- `docs/demo/SMOKE_TEST.md`
-- `docs/ai-context/ROADMAP.md`
-- `docs/ai-context/DEVLOG.md`
-- `docs/ai-context/AI_HANDOFF.md`
+- `README.md` - added Screenshots section with trace overview, conflict, and grounding examples
+- `docs/ai-context/ROADMAP.md` - marked v0.1 complete, outlined v0.2 developer integration
+- `docs/ai-context/DEVLOG.md` - latest entries document final smoke validation and UI polish
+- `docs/ai-context/AI_HANDOFF.md` - updated with v0.1 completion status
+- `sdk/python/examples/local_rag_demo/README.md` - demo runbook complete
+- `docs/demo/LOCAL_RAG_DEMO.md` - demo documentation complete
+- `docs/demo/WARNING_RULES.md` - warning rule documentation complete
+- `docs/demo/SMOKE_TEST.md` - smoke test guide complete
 
 ## Initial Warning Rules
 
@@ -119,21 +116,26 @@ The collector already receives the full trace payload, owns local persistence, a
 
 The Python SDK should remain lightweight and focused on instrumentation.
 
-## Next Step
+## v0.1 Validation Complete
 
-Final smoke test / screenshot pass:
+All validation gates passed:
 
-- run scripts from clean root invocation and record pass/fail
-- validate expected warning mapping for five local RAG demo traces
-- capture dashboard screenshots for conflict/hallucinated/no_match traces
-- freeze demo docs for handoff
-- then start warning/test hardening in a focused quality pass
+- [x] run scripts from clean root invocation and record pass/fail
+- [x] validate expected warning mapping for five local RAG demo traces
+- [x] capture dashboard screenshots for conflict/hallucinated/no_match traces
+- [x] freeze demo docs for handoff
+- [x] dashboard UI polish (sidebar text truncation, Final answer card resizing)
+- [x] README aligned with screenshots and current feature set
+- [x] ROADMAP and docs synchronized
 
-Keep LangChain/LlamaIndex integration deferred until this milestone is complete.
+## Next Milestone
 
-The next successful validation should be:
+Preparing for v0.2 Developer Integration / User Onboarding:
 
-1. Run real local retrieval demo.
-2. Send trace via SDK `flush()` to collector on `:4319`.
-3. Collector persists traces, spans, and warnings.
-4. Dashboard trace detail displays real chunks, scores, and warnings.
+- User onboarding documentation
+- Python SDK integration guide
+- Custom pipeline example
+- Stable trace/chunk schema documentation
+- Local startup command consolidation (Docker Compose / improved scripts)
+
+LangChain/LlamaIndex adapters remain deferred until v0.2 schema and warning behavior stabilize.

@@ -1,5 +1,28 @@
 # Devlog
 
+## 2026-06-22 (Dashboard UI Polish + Final v0.1 Release Prep)
+
+### Completed
+
+- Dashboard sidebar trace list: added text truncation for query and answer fields
+  - Query: max 2 lines, ellipsis overflow
+  - Answer: max 3 lines, ellipsis overflow
+  - Ensures uniform card heights regardless of content length
+- Final answer card in trace detail:
+  - Repositioned from floating window to grid layout with Query/Duration/Warnings
+  - Added inline vertical resizing with `resize: vertical` CSS
+  - Scrollable content area for long answers
+  - Removed nested border structure (single outer card border)
+  - Initial height: 92px min, 320px max, user-adjustable
+- README aligned with current screenshots and feature set
+- All dashboard, SDK, collector, and documentation paths verified and consistent
+
+### Notes
+
+- Sidebar truncation prevents layout explosion when some traces have very long final answers
+- Final answer card resizing allows users to expand/collapse inline without moving page flow
+- UI changes improve dashboard readability for both quick scanning (list view) and detailed inspection (detail view)
+
 ## 2026-06-22 (Demo Packaging Progress + Final Smoke Validation)
 
 ### Completed

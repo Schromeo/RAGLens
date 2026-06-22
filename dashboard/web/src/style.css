@@ -257,6 +257,10 @@ button {
   margin-top: 8px;
   color: #111827;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .trace-answer {
@@ -265,6 +269,10 @@ button {
   font-size: 13px;
   line-height: 1.4;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .trace-meta {
@@ -398,6 +406,27 @@ button {
 
 .summary-value-answer {
   color: #0f172a;
+}
+
+.summary-card-answer {
+  min-width: 0;
+}
+
+.inline-resizable-answer {
+  width: 100%;
+  min-height: 92px;
+  max-height: 320px;
+  padding: 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: auto;
+  resize: vertical;
 }
 
 .summary-value-duration {
@@ -794,3 +823,4 @@ button {
     flex-direction: column;
   }
 }
+

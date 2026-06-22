@@ -178,3 +178,39 @@ Next milestone scope:
 - simple chunking
 - transparent local retrieval (TF-IDF + cosine, or sentence-transformers + cosine)
 - SDK instrumentation and warning validation on real retrieval traces
+
+---
+
+## 2026-06-22 — Dashboard UI: Inline Final answer with text truncation
+
+### Decision
+
+Move Final answer from floating fixed-position window to grid layout alongside Query/Duration/Warnings.
+Add text truncation in sidebar to keep trace card heights uniform.
+Use CSS `resize: vertical` for inline answer card expansion/collapse.
+
+### Reason
+
+- Fixed floating window disrupted page layout flow and was not discoverable in all viewport sizes.
+- Long answer text in sidebar trace cards caused cards to grow unpredictably, breaking visual consistency.
+- Users expect grid layout consistency across summary cards (all at same height unless explicitly resized).
+- Inline resizing is more intuitive than separate modal or floating window.
+
+### Outcome
+
+**Trace list (sidebar):**
+- Query field: max 2 lines, ellipsis overflow
+- Answer field: max 3 lines, ellipsis overflow
+- Result: uniform card heights regardless of content length
+
+**Trace detail (main):**
+- Final answer: inline scrollable card in 4-column grid
+- Default height: min 92px, max 320px
+- User can drag bottom edge to resize vertically
+- Content area scrolls independently
+
+Effect:
+- Sidebar is predictable and scannable
+- Detail view grid remains balanced (Query / Answer / Duration / Warnings all in one row)
+- No out-of-page floating elements
+- Responsive to different answer lengths
