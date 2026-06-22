@@ -1,5 +1,40 @@
 # Devlog
 
+## 2026-06-22 (Demo Packaging Progress + Final Smoke Validation)
+
+### Completed
+
+- Ran startup and demo scripts from repository root:
+  - `scripts/start-collector.ps1`
+  - `scripts/start-dashboard.ps1`
+  - `scripts/demo-trace-all.ps1`
+  - `scripts/smoke.ps1`
+- Verified `trace-all` completed with `Generated traces: 5` and `Failed traces: 0`.
+- Verified expected warning mapping via collector API for generated trace IDs.
+- Aligned README and demo docs command paths with actual directories:
+  - collector path -> `collector/go`
+  - dashboard path -> `dashboard/web`
+- Added cross-links across demo docs:
+  - `LOCAL_RAG_DEMO.md` <-> `WARNING_RULES.md` <-> `SMOKE_TEST.md`
+
+### Acceptance Snapshot
+
+- Collector health: pass
+- Dashboard starts: pass
+- trace-all runs: pass
+- no_match warning: pass
+- low_score warning: pass
+- duplicate warning: pass
+- conflict warning: pass
+- hallucinated warning: pass
+- Trace detail readable: pass
+- README commands accurate: pass
+
+### Notes
+
+- Conflict trace can include an additional warning alongside `conflicting_chunks` in some runs.
+- For acceptance, conflict case validation checks that `conflicting_chunks` is present.
+
 ## 2026-06-21 (Real Local RAG Demo Documentation and Milestone Closeout)
 
 ### Completed

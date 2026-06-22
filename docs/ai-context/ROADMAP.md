@@ -52,13 +52,15 @@ Completed so far:
 
 Real Local RAG Demo is complete.
 
+Demo packaging and final smoke validation are now in progress.
+
 Immediate goals:
 
-* Improve warning explanation quality and details display in dashboard.
-* Add unit tests for warning rules and local retrieval demo cases.
-* Expand real local RAG instrumentation coverage.
-* Evaluate semantic retriever baseline (sentence-transformers + cosine) without breaking trace schema.
-* Keep LangChain/LlamaIndex adapters deferred until test coverage is stable.
+* Finalize root/docs command-path consistency (`collector/go`, `dashboard/web`).
+* Keep demo docs cross-linked and operator-friendly.
+* Complete final smoke test checklist and acceptance snapshot.
+* Capture dashboard screenshots for demo packaging.
+* Keep LangChain/LlamaIndex adapters deferred until DX and smoke stability are locked.
 
 ---
 
@@ -135,6 +137,25 @@ Verified warning-target cases:
 * `duplicate` -> `duplicate_chunks`
 * `conflict` -> `conflicting_chunks`
 * `hallucinated` -> `answer_not_grounded`
+
+
+## v0.1 Demo Packaging / Developer Experience
+
+Goal:
+Make RAGLens easy to install, run, understand, and demo as a polished local-first RAG debugging MVP.
+
+Status:
+In Progress (final smoke test and screenshot pass)
+
+Scope:
+- Root README quickstart
+- Local RAG demo README
+- Startup scripts or Makefile
+- Smoke test guide
+- Deterministic demo trace generation
+- CLI output polish
+- Screenshot/GIF placeholders
+- Dashboard demo checklist
 
 ### Exit Criteria
 

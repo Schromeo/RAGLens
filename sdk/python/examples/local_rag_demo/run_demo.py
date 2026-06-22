@@ -1,6 +1,8 @@
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from raglens import trace
 
@@ -24,6 +26,8 @@ class DemoCase:
     top_k: int = 3
     min_score: float = 0.0
     hallucinate: bool = False
+    purpose: str = ""
+    expected_warning: str | None = None
 
 
 CASES: dict[str, DemoCase] = {
@@ -32,57 +36,84 @@ CASES: dict[str, DemoCase] = {
         query="How many days do I have to return a physical product?",
         top_k=3,
         min_score=0.0,
+        purpose="Shows a normal refund-policy retrieval flow.",
     ),
     "shipping": DemoCase(
         name="shipping",
         query="How long does standard shipping take?",
         top_k=3,
         min_score=0.0,
+        purpose="Shows a normal shipping-policy retrieval flow.",
     ),
     "warranty": DemoCase(
         name="warranty",
         query="Does the warranty cover water damage?",
         top_k=3,
         min_score=0.0,
+        purpose="Shows a normal warranty-policy retrieval flow.",
     ),
     "account": DemoCase(
         name="account",
         query="How can I reset my password?",
         top_k=3,
         min_score=0.0,
+        purpose="Shows a normal account-policy retrieval flow.",
     ),
     "no_match": DemoCase(
         name="no_match",
         query="What is the policy for international livestock transport?",
         top_k=3,
         min_score=0.25,
+        purpose="Simulates a query with no useful retrieved chunks.",
+        expected_warning="no_retrieved_chunks",
     ),
     "low_score": DemoCase(
         name="low_score",
         query="Can I do something with my order?",
         top_k=3,
         min_score=0.0,
+        purpose="Simulates weak retrieval confidence.",
+        expected_warning="low_retrieval_score",
     ),
     "duplicate": DemoCase(
         name="duplicate",
         query="Do I need to verify my email address before account changes?",
         top_k=4,
         min_score=0.0,
+        purpose="Simulates duplicated retrieved evidence.",
+        expected_warning="duplicate_chunks",
     ),
     "conflict": DemoCase(
         name="conflict",
         query="How many days do I have to return a physical product?",
         top_k=4,
         min_score=0.0,
+        purpose="Simulates conflicting retrieved policy chunks.",
+        expected_warning="conflicting_chunks",
     ),
     "hallucinated": DemoCase(
         name="hallucinated",
-        query="How long do refunds take?",
-        top_k=3,
+        query="Standard shipping usually takes 5 to 7 business days after an order has been processed.",
+        top_k=1,
         min_score=0.0,
         hallucinate=True,
+        purpose="Simulates an answer not supported by otherwise relevant retrieved chunks.",
+        expected_warning="answer_not_grounded",
     ),
 }
+
+
+TRACE_ALL_CASE_NAMES = [
+    "no_match",
+    "low_score",
+    "duplicate",
+    "conflict",
+    "hallucinated",
+]
+
+
+def get_collector_url() -> str:
+    return os.getenv("RAGLENS_COLLECTOR_URL", "http://localhost:4319")
 
 
 def build_chunks():
@@ -167,6 +198,9 @@ def run_case(case: DemoCase) -> None:
 
     print("=" * 80)
     print(f"Case: {case.name}")
+    print(f"Purpose: {case.purpose or 'N/A'}")
+    if case.expected_warning:
+        print(f"Expected warning: {case.expected_warning}")
     print(f"Query: {case.query}")
     print(f"top_k: {case.top_k}")
     print(f"min_score: {case.min_score}")
@@ -253,7 +287,7 @@ def build_prompt(query: str, results: list[RetrievedChunk]) -> str:
     )
 
 
-def run_traced_case(case: DemoCase) -> None:
+def run_traced_case(case: DemoCase, verbose: bool = True) -> Any:
     _, chunks = build_chunks()
     retriever = TfidfRetriever(chunks)
 
@@ -313,29 +347,75 @@ def run_traced_case(case: DemoCase) -> None:
             },
         )
 
-    print("=" * 80)
-    print(f"Traced case: {case.name}")
-    print(f"Query: {case.query}")
-    print()
-    print_retrieved_chunks(results)
-    print()
-    print("Answer:")
-    print(answer)
-    print()
-    print("Trace JSON:")
-    print(t.to_json())
-    print()
+    if verbose:
+        print("=" * 80)
+        print(f"Traced case: {case.name}")
+        print(f"Purpose: {case.purpose or 'N/A'}")
+        if case.expected_warning:
+            print(f"Expected warning: {case.expected_warning}")
+        print(f"Query: {case.query}")
+        print()
+        print_retrieved_chunks(results)
+        print()
+        print("Answer:")
+        print(answer)
+        print()
+        print("Trace JSON:")
+        print(t.to_json())
+        print()
 
     response = t.flush()
 
-    print("Sent trace to RAGLens collector:")
-    print(response)
-    print("=" * 80)
+    if verbose:
+        print("Sent trace to RAGLens collector:")
+        print(response)
+        print("=" * 80)
+
+    return response
 
 
 def run_all_traced_cases() -> None:
-    for case in CASES.values():
-        run_traced_case(case)
+    collector_url = get_collector_url()
+
+    print("RAGLens Local RAG Demo")
+    print(f"Collector: {collector_url}")
+    print()
+    print("Generating demo traces...")
+    print()
+
+    total = len(TRACE_ALL_CASE_NAMES)
+    succeeded = 0
+    failed = 0
+
+    for index, case_name in enumerate(TRACE_ALL_CASE_NAMES, start=1):
+        case = CASES[case_name]
+
+        print(f"[{index}/{total}] {case.name}")
+        print(f"Purpose: {case.purpose or 'N/A'}")
+        print(f"Query: {case.query}")
+        print(f"Expected warning: {case.expected_warning or 'none'}")
+
+        try:
+            response = run_traced_case(case, verbose=False)
+            succeeded += 1
+            print("Trace sent: yes")
+            print(f"Collector response: {response}")
+        except Exception as exc:
+            failed += 1
+            print("Trace sent: no")
+            print(f"Error: {exc}")
+
+        print()
+
+    print("Done.")
+    print(f"Generated traces: {succeeded}")
+    print(f"Failed traces: {failed}")
+    print()
+    print("Open the RAGLens dashboard and inspect the generated traces.")
+    print("Suggested traces to inspect:")
+    print("- real-local-rag-conflict")
+    print("- real-local-rag-hallucinated")
+    print("- real-local-rag-no_match")
 
 
 def print_help() -> None:
@@ -345,8 +425,11 @@ def print_help() -> None:
     print("- all")
     print("- trace <case>")
     print("- trace-all")
-    for case_name in CASES:
-        print(f"- {case_name}")
+    print()
+    print("Cases:")
+    for case_name, case in CASES.items():
+        expected = f" -> {case.expected_warning}" if case.expected_warning else ""
+        print(f"- {case_name}{expected}")
 
 
 def main() -> None:
@@ -382,7 +465,7 @@ def main() -> None:
             print_help()
             raise SystemExit(1)
 
-        run_traced_case(CASES[case_name])
+        run_traced_case(CASES[case_name], verbose=True)
         return
 
     if command == "trace-all":

@@ -4,11 +4,26 @@ import TraceListPage from "./pages/TraceListPage";
 
 export default function App() {
   const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  function toggleSidebar() {
+    setSidebarOpen((open) => !open);
+  }
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
+        <div className="topbar-left">
+          <button
+            className="secondary-button sidebar-toggle-button"
+            onClick={toggleSidebar}
+            title={sidebarOpen ? "Hide trace sidebar" : "Show trace sidebar"}
+          >
+            {sidebarOpen ? "<< Hide traces" : ">> Show traces"}
+          </button>
+        </div>
+
+        <div className="topbar-brand">
           <div className="eyebrow">Local-first RAG debugger</div>
           <h1>RAGLens</h1>
         </div>
@@ -18,13 +33,15 @@ export default function App() {
         </div>
       </header>
 
-      <main className="layout">
-        <section className="sidebar">
-          <TraceListPage
-            selectedTraceId={selectedTraceId}
-            onSelectTrace={setSelectedTraceId}
-          />
-        </section>
+      <main className={sidebarOpen ? "layout" : "layout sidebar-collapsed"}>
+        {sidebarOpen && (
+          <section className="sidebar">
+            <TraceListPage
+              selectedTraceId={selectedTraceId}
+              onSelectTrace={setSelectedTraceId}
+            />
+          </section>
+        )}
 
         <section className="detail">
           {selectedTraceId ? (
@@ -33,8 +50,9 @@ export default function App() {
             <div className="empty-state">
               <h2>Select a trace</h2>
               <p>
-                Choose a trace from the left panel to inspect retrieval chunks,
-                LLM calls, metadata, and warnings.
+                Choose a trace from the trace panel to inspect retrieval chunks,
+                LLM calls, metadata, and warnings. You can use the Show traces
+                button in the top bar anytime.
               </p>
             </div>
           )}

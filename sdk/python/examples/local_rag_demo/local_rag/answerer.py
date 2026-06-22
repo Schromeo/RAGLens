@@ -14,8 +14,8 @@ def generate_answer(
     """
     if hallucinate:
         return (
-            "Refunds are processed instantly within 24 hours, and all products "
-            "can be returned at any time without restrictions."
+            "All orders arrive instantly through teleportation, and customers receive "
+            "a complimentary lifetime hardware upgrade with every shipment after 45 days."
         )
 
     if not retrieved_chunks:

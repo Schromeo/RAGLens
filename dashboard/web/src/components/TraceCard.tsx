@@ -7,6 +7,8 @@ type Props = {
 };
 
 export default function TraceCard({ trace, selected, onClick }: Props) {
+  const demoCase = getDemoCase(trace.name);
+
   return (
     <button
       className={selected ? "trace-card selected" : "trace-card"}
@@ -14,7 +16,14 @@ export default function TraceCard({ trace, selected, onClick }: Props) {
     >
       <div className="trace-card-top">
         <span className={`status-dot ${trace.status}`} />
-        <strong>{trace.name}</strong>
+
+        <div className="trace-card-title">
+          <strong>{trace.name}</strong>
+
+          {demoCase && (
+            <span className="trace-case-badge">demo: {demoCase}</span>
+          )}
+        </div>
       </div>
 
       <div className="trace-query">{trace.query || "No query recorded"}</div>
@@ -23,11 +32,29 @@ export default function TraceCard({ trace, selected, onClick }: Props) {
 
       <div className="trace-meta">
         <span>{formatDuration(trace.duration_ms)}</span>
-        <span>{trace.warning_count} warnings</span>
+        <span>{formatWarningCount(trace.warning_count)}</span>
         <span>{formatDate(trace.started_at)}</span>
       </div>
     </button>
   );
+}
+
+function getDemoCase(traceName: string): string | null {
+  const prefix = "real-local-rag-";
+
+  if (!traceName.startsWith(prefix)) {
+    return null;
+  }
+
+  return traceName.slice(prefix.length);
+}
+
+function formatWarningCount(count: number): string {
+  if (count === 1) {
+    return "1 warning";
+  }
+
+  return `${count} warnings`;
 }
 
 function formatDuration(durationMs: number | null): string {

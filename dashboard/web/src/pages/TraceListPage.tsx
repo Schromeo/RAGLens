@@ -60,7 +60,8 @@ export default function TraceListPage({
       {!loading && !error && traces.length === 0 && (
         <div className="empty-card">
           <h3>No traces yet</h3>
-          <p>Run the refund policy demo to send your first trace.</p>
+          <p>Run the local RAG demo to send your first traces.</p>
+          <pre>python -m examples.local_rag_demo.run_demo trace-all</pre>
         </div>
       )}
 

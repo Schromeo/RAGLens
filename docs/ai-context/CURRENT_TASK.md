@@ -1,7 +1,7 @@
 # Current Task
 
 ## Current Focus
-Real Local RAG Demo documentation closeout and demo packaging prep.
+Final smoke test and screenshot pass for demo packaging.
 
 The Python SDK, Go collector, SQLite persistence, and initial React Dashboard are now working.
 
@@ -11,8 +11,8 @@ The Warning Engine / Diagnosis Layer MVP is complete.
 The Real Local RAG Demo milestone is complete.
 
 ## Current Goal
-Ensure milestone-complete docs are accurate and usable for first-time developers.
-Set up the next iteration around Developer Experience and demo packaging.
+Lock down a reproducible demo runbook and complete final validation before screenshot capture.
+Ensure docs, scripts, and collector/dashboard startup paths are consistent.
 
 ## Current System Status
 Completed so far:
@@ -79,6 +79,7 @@ React Dashboard
 Real Local RAG Demo (Completed).
 
 Current active work is documentation and demo cleanup.
+Current active work is final smoke validation and screenshot preparation.
 
 ## Files Likely To Change Next
 
@@ -86,6 +87,9 @@ Documentation:
 
 - `README.md`
 - `sdk/python/examples/local_rag_demo/README.md`
+- `docs/demo/LOCAL_RAG_DEMO.md`
+- `docs/demo/WARNING_RULES.md`
+- `docs/demo/SMOKE_TEST.md`
 - `docs/ai-context/ROADMAP.md`
 - `docs/ai-context/DEVLOG.md`
 - `docs/ai-context/AI_HANDOFF.md`
@@ -117,12 +121,12 @@ The Python SDK should remain lightweight and focused on instrumentation.
 
 ## Next Step
 
-Developer Experience and Demo Packaging:
+Final smoke test / screenshot pass:
 
-- improve top-level and demo README quickstart quality
-- add screenshots or short GIF walkthrough for dashboard flow
-- reduce local startup friction for first-time users
-- polish end-to-end demo script and operator instructions
+- run scripts from clean root invocation and record pass/fail
+- validate expected warning mapping for five local RAG demo traces
+- capture dashboard screenshots for conflict/hallucinated/no_match traces
+- freeze demo docs for handoff
 - then start warning/test hardening in a focused quality pass
 
 Keep LangChain/LlamaIndex integration deferred until this milestone is complete.
