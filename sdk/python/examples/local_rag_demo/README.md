@@ -1,83 +1,147 @@
 # Real Local RAG Demo
 
-This demo validates the real local retrieval path using the current RAGLens trace schema:
+## What This Demo Is
 
-`local docs -> chunking -> TF-IDF retrieval -> trace flush -> collector warnings -> dashboard`
+This demo is a real, local retrieval pipeline wired into the existing RAGLens trace path.
 
-## Setup
+It replaces synthetic retrieval chunks with actual retrieval output while preserving the same SDK trace schema, collector ingestion flow, SQLite persistence, dashboard visualization, and warning engine behavior.
 
-Run from the repository root:
+## Why This Demo Exists
+
+The goal is to prove that RAGLens can diagnose real retrieval behavior, not only handcrafted warning examples.
+
+This milestone keeps the implementation intentionally simple and local-first:
+
+- local markdown policy documents
+- deterministic chunking
+- TF-IDF plus cosine similarity retrieval
+- simple local answer generation without external LLM calls
+
+## Directory Structure
+
+```text
+local_rag_demo/
+	README.md
+	__init__.py
+	run_demo.py
+	docs/
+		refund_policy.md
+		legacy_refund_policy.md
+		shipping_policy.md
+		account_policy.md
+		warranty_policy.md
+	local_rag/
+		__init__.py
+		document_loader.py
+		chunker.py
+		tfidf_retriever.py
+		answerer.py
+```
+
+## How The Local RAG Pipeline Works
+
+1. Load markdown policy files from local disk.
+2. Split each document into deterministic chunks.
+3. Build TF-IDF vectors and score chunks with cosine similarity.
+4. Return ranked chunks with chunk id, document id, source path, rank, text, and score.
+5. Generate a local answer from retrieved chunks.
+6. Map retrieved chunks into existing SDK retrieval span schema.
+7. Send trace via trace(), t.retrieval(), t.llm(), and t.flush().
+8. Collector stores trace, spans, warnings in SQLite.
+9. Dashboard shows real retrieval traces and warning cards.
+
+End-to-end flow:
+
+```text
+Python SDK
+	-> t.flush()
+	-> POST /api/traces
+	-> Go Collector (:4319)
+	-> SQLite (traces, spans, warnings)
+	-> GET /api/traces/{trace_id}
+	-> Dashboard warning cards
+```
+
+## Prerequisites
+
+Run these commands from sdk/python.
+
+Collector should already be running on port 4319.
 
 ```powershell
-cd sdk/python
 $env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
 ```
 
-Make sure the collector is running on `:4319` before `trace` commands.
+## Run Inspect
 
-## Commands
-
-Inspect loaded docs and generated chunks:
+Inspect loaded docs and generated chunks.
 
 ```powershell
 python -m examples.local_rag_demo.run_demo inspect
 ```
 
-Run one retrieval-only query (no trace flush):
+## Run Retrieve
+
+Run one retrieval query locally, without sending traces.
 
 ```powershell
 python -m examples.local_rag_demo.run_demo retrieve "How long does standard shipping take?"
 ```
 
-Run one traced case and send to collector:
+## Run One Traced Case
+
+Run a single traced case and send it to the collector.
 
 ```powershell
 python -m examples.local_rag_demo.run_demo trace conflict
 ```
 
-Run all traced cases:
+## Run All Traced Cases
 
 ```powershell
 python -m examples.local_rag_demo.run_demo trace-all
 ```
 
-## Available Cases
+## Expected Warning Cases
 
-- `refund`
-- `shipping`
-- `warranty`
-- `account`
-- `no_match`
-- `low_score`
-- `duplicate`
-- `conflict`
-- `hallucinated`
-
-## Expected Warning Mapping
-
-Deterministic warning-target cases:
-
-- `no_match` -> `no_retrieved_chunks`
-- `low_score` -> `low_retrieval_score`
-- `duplicate` -> `duplicate_chunks`
-- `conflict` -> `conflicting_chunks`
-- `hallucinated` -> `answer_not_grounded`
+- no_match -> no_retrieved_chunks
+- low_score -> low_retrieval_score
+- duplicate -> duplicate_chunks
+- conflict -> conflicting_chunks
+- hallucinated -> answer_not_grounded
 
 Notes:
 
-- `duplicate` is intentionally forced to trigger by appending one synthetic exact duplicate chunk in the traced path.
-- `trace-all` does not mean each case returns exactly one warning.
-- Some cases can return zero warnings (for example `warranty`), and some can return multiple warnings depending on retrieved context and answer content.
+- duplicate is intentionally forced by adding one synthetic exact-duplicate chunk in traced mode.
+- trace-all does not imply one warning per case.
+- some cases can produce zero warnings and some can produce multiple warnings.
 
-## Quick Verification
+## Available Cases
 
-If you want a compact warning summary per case:
+- refund
+- shipping
+- warranty
+- account
+- no_match
+- low_score
+- duplicate
+- conflict
+- hallucinated
 
-```powershell
-$cases = @('refund','shipping','warranty','account','no_match','low_score','duplicate','conflict','hallucinated')
-foreach($c in $cases){
-	Write-Output "CASE $c"
-	$out = python -m examples.local_rag_demo.run_demo trace $c 2>&1
-	($out | Select-String "warnings_generated").Line
-}
-```
+## Dashboard Verification
+
+After running trace or trace-all, open the dashboard and inspect trace detail pages.
+
+You should see:
+
+- real retrieved chunks and similarity scores
+- warning cards generated from real retrieval output
+
+## Non-Goals In This Milestone
+
+- No LangChain integration yet.
+- No LlamaIndex integration yet.
+- No vector database yet.
+- No external embeddings service.
+
+These are intentionally deferred to keep v0.1 local-first, transparent, and simple.

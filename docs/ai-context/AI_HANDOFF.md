@@ -184,6 +184,60 @@ python -m examples.local_rag_demo.run_demo trace duplicate
 python -m examples.local_rag_demo.run_demo trace-all
 ```
 
+### Milestone Update: Real Local RAG Demo (Completed)
+
+Milestone status: Completed
+
+Completed components:
+
+- local markdown policy document set
+- local document loader
+- deterministic chunker
+- TF-IDF plus cosine similarity retriever
+- simple local answerer with optional hallucinated mode
+- real retrieved chunk mapping to existing SDK trace schema
+- trace submission through existing SDK flow: `trace()`, `t.retrieval()`, `t.llm()`, `t.flush()`
+- collector ingestion and SQLite persistence reuse
+- dashboard validation for real retrieval traces and warning cards
+
+Verified commands (from `sdk/python`):
+
+```powershell
+$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+python -m examples.local_rag_demo.run_demo inspect
+python -m examples.local_rag_demo.run_demo retrieve "How long does standard shipping take?"
+python -m examples.local_rag_demo.run_demo all
+python -m examples.local_rag_demo.run_demo trace conflict
+python -m examples.local_rag_demo.run_demo trace-all
+```
+
+Verified warning cases:
+
+- no_match -> no_retrieved_chunks
+- low_score -> low_retrieval_score
+- duplicate -> duplicate_chunks
+- conflict -> conflicting_chunks
+- hallucinated -> answer_not_grounded
+
+Current project state:
+
+- Warning Engine / Diagnosis Layer MVP: Completed
+- Real Local RAG Demo milestone: Completed
+- End-to-end path is validated with real retrieval output:
+
+```text
+Python SDK -> Collector (:4319) -> SQLite -> Dashboard
+```
+
+Recommended next step:
+
+- Developer Experience and Demo Packaging
+- Improve README quickstart and demo runbook polish
+- Add screenshots or GIF walkthrough
+- Make local startup simpler for first-time users
+- Polish dashboard demonstration flow
+- Keep LangChain and LlamaIndex adapters deferred until DX and test hardening are stable
+
 ### Next Major Step
 
 Improve warning explanation quality, add tests for warning rules and demo cases, then evaluate a semantic retriever baseline before adapter work.

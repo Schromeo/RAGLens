@@ -1,5 +1,54 @@
 # Devlog
 
+## 2026-06-21 (Real Local RAG Demo Documentation and Milestone Closeout)
+
+### Completed
+
+- Finalized documentation for the Real Local RAG Demo milestone.
+- Updated local demo runbook in `sdk/python/examples/local_rag_demo/README.md` for new developers.
+- Synced milestone-complete status across AI handoff, roadmap, and current task docs.
+- Documented verified command set and expected warning-target case mapping.
+
+### What Was Built (Milestone Summary)
+
+- local markdown policy corpus
+- local loader
+- deterministic chunker
+- TF-IDF plus cosine retriever
+- simple local answerer
+- SDK trace integration to collector on `:4319`
+- dashboard verification of real retrieval traces and warning cards
+
+### Why TF-IDF Was Chosen
+
+- Fully local-first and easy to run in v0.1.
+- Transparent scoring behavior for debugging and explanation.
+- Minimal dependency and infrastructure complexity.
+- Good baseline before semantic retriever comparison.
+
+### What Was Verified
+
+- End-to-end flow from SDK flush to collector to SQLite to dashboard.
+- Real retrieved chunks include ids, source, rank, text, and scores.
+- Warning cards render from real retrieval output, not only synthetic fixtures.
+
+### Warning Rules Triggered In Verified Cases
+
+- `no_retrieved_chunks` via `no_match`
+- `low_retrieval_score` via `low_score`
+- `duplicate_chunks` via `duplicate`
+- `conflicting_chunks` via `conflict`
+- simplified `answer_not_grounded` via `hallucinated`
+
+### Deferred By Design
+
+- LangChain adapter integration
+- LlamaIndex adapter integration
+- Vector database integration
+- External embedding providers
+
+These remain intentionally deferred until DX hardening and test coverage improve.
+
 ## 2026-06-15 (Real Local RAG Milestone Completed)
 
 ### Completed

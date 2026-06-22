@@ -1,7 +1,7 @@
 # Current Task
 
 ## Current Focus
-Post-Real Local RAG Demo hardening and quality improvements.
+Real Local RAG Demo documentation closeout and demo packaging prep.
 
 The Python SDK, Go collector, SQLite persistence, and initial React Dashboard are now working.
 
@@ -11,7 +11,8 @@ The Warning Engine / Diagnosis Layer MVP is complete.
 The Real Local RAG Demo milestone is complete.
 
 ## Current Goal
-Improve warning explainability, add tests, and stabilize the real local retrieval path for iteration.
+Ensure milestone-complete docs are accurate and usable for first-time developers.
+Set up the next iteration around Developer Experience and demo packaging.
 
 ## Current System Status
 Completed so far:
@@ -77,33 +78,17 @@ React Dashboard
 
 Real Local RAG Demo (Completed).
 
-Current active work is follow-up hardening.
+Current active work is documentation and demo cleanup.
 
 ## Files Likely To Change Next
-
-Python demo / retrieval prototype:
-
-- `sdk/python/examples/`
-- `examples/refund-policy-demo/docs/`
-
-Go Collector:
-
-- `collector/go/internal/warnings/engine.go`
-
-Optional collector updates only if needed for real retrieval metadata compatibility.
-
-Dashboard:
-
-- `dashboard/web/src/pages/TraceDetailPage.tsx`
-
-Mostly validation; no major UI changes required for this milestone.
 
 Documentation:
 
 - `README.md`
+- `sdk/python/examples/local_rag_demo/README.md`
 - `docs/ai-context/ROADMAP.md`
 - `docs/ai-context/DEVLOG.md`
-- `docs/ai-context/DECISIONS.md`
+- `docs/ai-context/AI_HANDOFF.md`
 
 ## Initial Warning Rules
 
@@ -132,12 +117,13 @@ The Python SDK should remain lightweight and focused on instrumentation.
 
 ## Next Step
 
-Implement post-milestone hardening tasks:
+Developer Experience and Demo Packaging:
 
-- Improve warning detail display and wording.
-- Add unit tests for warning rules.
-- Add retrieval demo assertions for expected warning targets.
-- Evaluate semantic retrieval baseline while preserving existing trace schema.
+- improve top-level and demo README quickstart quality
+- add screenshots or short GIF walkthrough for dashboard flow
+- reduce local startup friction for first-time users
+- polish end-to-end demo script and operator instructions
+- then start warning/test hardening in a focused quality pass
 
 Keep LangChain/LlamaIndex integration deferred until this milestone is complete.
 

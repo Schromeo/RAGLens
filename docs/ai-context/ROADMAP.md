@@ -64,7 +64,7 @@ Immediate goals:
 
 ## v0.1 — Local RAG Debugger MVP
 
-**Status:** In Progress (Diagnosis Layer MVP complete)
+**Status:** In Progress (Diagnosis Layer MVP + Real Local RAG Demo complete)
 
 ### Goal
 
@@ -115,6 +115,26 @@ Validation smoke test:
 * `sdk/python/examples/warning_rules_demo.py`
 * supports `all` and per-rule runs
 * expected result: each case returns `warnings_generated: 1`
+
+### Completed Milestone: Real Local RAG Demo
+
+Completed and verified in v0.1:
+
+* local markdown policy documents for retrieval
+* simple deterministic chunking pipeline
+* TF-IDF plus cosine similarity retriever baseline
+* real retrieved chunks with rank and score
+* SDK trace integration without schema changes
+* dashboard verification of real retrieval traces
+* warning rule verification on real retrieval output
+
+Verified warning-target cases:
+
+* `no_match` -> `no_retrieved_chunks`
+* `low_score` -> `low_retrieval_score`
+* `duplicate` -> `duplicate_chunks`
+* `conflict` -> `conflicting_chunks`
+* `hallucinated` -> `answer_not_grounded`
 
 ### Exit Criteria
 
