@@ -70,6 +70,22 @@ The v0.1 warning rules are intentionally simple and deterministic. See `docs/dem
 
 ## Quickstart
 
+### 0. Start everything with one command
+
+If you want the fastest local setup, use the platform-specific one-click launcher.
+
+Windows PowerShell:
+
+```powershell
+.\scripts\windows\start-all.ps1
+```
+
+macOS:
+
+```bash
+bash ./scripts/mac/start-all.sh
+```
+
 ### 1. Start the collector
 
 From the repository root:
@@ -140,6 +156,12 @@ This generates representative RAG debugging traces and sends them to the local c
 
 You can also use the provided PowerShell scripts from the repository root.
 
+One-click start:
+
+```powershell
+.\scripts\windows\start-all.ps1
+```
+
 Start the collector:
 
 ```powershell
@@ -167,6 +189,12 @@ Run the smoke test:
 ### macOS shortcuts
 
 On macOS, use the shell scripts in `scripts/mac`.
+
+One-click start:
+
+```bash
+bash ./scripts/mac/start-all.sh
+```
 
 Start the collector:
 

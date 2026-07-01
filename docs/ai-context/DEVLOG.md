@@ -8,6 +8,7 @@
   - `scripts/windows` for PowerShell entry points
   - `scripts/mac` for Bash entry points
 - Added macOS shell wrappers for collector, dashboard, demo trace generation, and smoke testing.
+- Added one-click `start-all` launchers for macOS and Windows to start collector and dashboard together.
 - Updated README quickstart and shortcut commands to point at the new platform-specific script paths.
 
 ### Notes
