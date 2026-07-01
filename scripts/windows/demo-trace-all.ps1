@@ -6,7 +6,7 @@ Write-Host ""
 
 $env:RAGLENS_COLLECTOR_URL = "http://localhost:4319"
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
+$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $sdkPythonDir = Join-Path $repoRoot "sdk/python"
 
 Set-Location $sdkPythonDir

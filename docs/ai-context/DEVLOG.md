@@ -1,5 +1,20 @@
 # Devlog
 
+## 2026-06-30 (Platform-Specific Script Folders)
+
+### Completed
+
+- Split repository startup scripts into platform-specific folders:
+  - `scripts/windows` for PowerShell entry points
+  - `scripts/mac` for Bash entry points
+- Added macOS shell wrappers for collector, dashboard, demo trace generation, and smoke testing.
+- Updated README quickstart and shortcut commands to point at the new platform-specific script paths.
+
+### Notes
+
+- macOS scripts are executable Bash entry points and can be run with `bash ./scripts/mac/...`.
+- Windows scripts remain PowerShell-based and now live under `scripts/windows`.
+
 ## 2026-06-22 (Dashboard UI Polish + Final v0.1 Release Prep)
 
 ### Completed

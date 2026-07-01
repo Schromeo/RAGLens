@@ -143,25 +143,53 @@ You can also use the provided PowerShell scripts from the repository root.
 Start the collector:
 
 ```powershell
-.\scripts\start-collector.ps1
+.\scripts\windows\start-collector.ps1
 ```
 
 Start the dashboard in another terminal:
 
 ```powershell
-.\scripts\start-dashboard.ps1
+.\scripts\windows\start-dashboard.ps1
 ```
 
 Generate demo traces in a third terminal:
 
 ```powershell
-.\scripts\demo-trace-all.ps1
+.\scripts\windows\demo-trace-all.ps1
 ```
 
 Run the smoke test:
 
 ```powershell
-.\scripts\smoke.ps1
+.\scripts\windows\smoke.ps1
+```
+
+### macOS shortcuts
+
+On macOS, use the shell scripts in `scripts/mac`.
+
+Start the collector:
+
+```bash
+bash ./scripts/mac/start-collector.sh
+```
+
+Start the dashboard in another terminal:
+
+```bash
+bash ./scripts/mac/start-dashboard.sh
+```
+
+Generate demo traces in a third terminal:
+
+```bash
+bash ./scripts/mac/demo-trace-all.sh
+```
+
+Run the smoke test:
+
+```bash
+bash ./scripts/mac/smoke.sh
 ```
 
 ## Local RAG Demo
@@ -204,7 +232,13 @@ python -m examples.local_rag_demo.run_demo trace-all
 On Windows PowerShell:
 
 ```powershell
-.\scripts\demo-trace-all.ps1
+.\scripts\windows\demo-trace-all.ps1
+```
+
+On macOS:
+
+```bash
+bash ./scripts/mac/demo-trace-all.sh
 ```
 
 Then open the dashboard and inspect:

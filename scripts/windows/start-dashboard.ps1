@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "Starting RAGLens dashboard..."
 Write-Host ""
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
+$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $dashboardDir = Join-Path $repoRoot "dashboard\web"
 
 if (-not (Test-Path $dashboardDir)) {
