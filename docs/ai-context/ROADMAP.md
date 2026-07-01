@@ -393,8 +393,18 @@ The following items are possible future directions after the core local debugger
 
 Potential expansion:
 
-* Agent/tool call tracing
-* Multi-step agent timeline
+* AI application harness observability
+* agent span
+* tool span
+* memory span
+* verification span
+* human feedback / intervention span
+* context engineering diagnostics
+* failure attribution
+* harness-level timeline
+* tool call debugging
+* memory/context drift detection
+* verification result tracking
 * Semantic cache analysis
 * AI gateway integration
 * OpenTelemetry export
@@ -409,7 +419,9 @@ Potential expansion:
 
 ### Long-term direction
 
-RAGLens can evolve from a local-first RAG debugger into a broader AgentOps-lite tracing and debugging platform.
+RAGLens can evolve from a local-first RAG debugger into a broader tracing and debugging platform for AI application harnesses.
 
-The long-term project direction is TraceForge: a developer-first observability and debugging layer for AI applications.
+The long-term project direction is TraceForge: a developer-first, local-first observability and debugging layer for AI application harnesses.
+
+This future direction is intentionally separate from v0.2, which remains focused on Developer Integration / User Onboarding.
 

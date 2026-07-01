@@ -72,18 +72,30 @@ The v0.1 warning rules are intentionally simple and deterministic. See `docs/dem
 
 ### 0. Start everything with one command
 
-If you want the fastest local setup, use the platform-specific one-click launcher.
+If you want the fastest local setup, use the single cross-platform one-click launcher.
 
 Windows PowerShell:
 
 ```powershell
-.\scripts\windows\start-all.ps1
+.\scripts\start-all.py
+```
+
+If PowerShell refuses direct execution, use:
+
+```powershell
+python .\scripts\start-all.py
 ```
 
 macOS:
 
 ```bash
-bash ./scripts/mac/start-all.sh
+./scripts/start-all.py
+```
+
+If your shell does not honor the executable bit, use:
+
+```bash
+python ./scripts/start-all.py
 ```
 
 ### 1. Start the collector
@@ -159,7 +171,7 @@ You can also use the provided PowerShell scripts from the repository root.
 One-click start:
 
 ```powershell
-.\scripts\windows\start-all.ps1
+.\scripts\start-all.py
 ```
 
 Start the collector:
@@ -193,7 +205,7 @@ On macOS, use the shell scripts in `scripts/mac`.
 One-click start:
 
 ```bash
-bash ./scripts/mac/start-all.sh
+./scripts/start-all.py
 ```
 
 Start the collector:
@@ -296,7 +308,11 @@ The default demo requires no external LLM API and no API key.
 
 RAGLens starts as a local-first visual debugger for RAG pipelines.
 
-The long-term direction is to grow the tracing core into an AgentOps-lite observability foundation that can later evolve toward TraceForge.
+RAGLens starts with RAG pipeline debugging because retrieval, context quality, and grounding are common failure points in AI applications.
+
+The longer-term direction is to evolve the tracing core into a local-first observability layer for AI application harnesses: systems that manage context, tools, memory, model calls, verification, and feedback around foundation models.
+
+In that direction, RAGLens can grow beyond retrieval and LLM spans toward tool spans, memory spans, verification spans, human feedback spans, and richer diagnostics over AI application traces.
 
 Near-term focus:
 

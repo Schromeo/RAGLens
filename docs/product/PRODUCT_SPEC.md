@@ -229,17 +229,11 @@ Next recommended milestone:
 
 ## Long-term Vision
 
-RAGLens starts as a local-first RAG debugger.
+RAGLens begins as a local-first debugger for RAG pipelines. This keeps the MVP focused and useful.
 
-Over time, it can evolve into a broader platform for:
+The broader product direction is local-first observability for AI application harnesses. In this framing, a RAG pipeline is one type of AI harness: it selects context, calls a model, and produces an answer. Future AI harnesses may also include tools, memory, planners, verification steps, permissions, human feedback, and multi-step agent workflows.
 
-- LLM tracing
-- Agent observability
-- RAG evaluation
-- Prompt regression testing
-- Semantic cache analysis
-- AI gateway observability
-- OpenTelemetry-compatible AI traces
+RAGLens should preserve a general trace/span foundation so future versions can support additional span types beyond retrieval and LLM calls.
 
 ## Product Principle
 

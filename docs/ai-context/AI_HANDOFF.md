@@ -46,17 +46,27 @@ v0.1 should support:
 ## Long-term Vision
 RAGLens starts as a local-first RAG debugger.
 
-Over time, it can evolve into a broader LLM/Agent observability and evaluation platform, internally referred to as TraceForge.
+v0.1 is complete and validated end-to-end.
+
+The long-term direction is TraceForge: local-first observability and debugging for AI application harnesses.
+
+In this framing, RAG is the first vertical slice because retrieval quality, context quality, conflicting evidence, and grounding are common failure points.
 
 Potential future modules:
 
-- Agent/tool call tracing
+- tool spans
+- memory spans
+- verification spans
+- human feedback / intervention spans
+- agent workflow visibility
 - Prompt/model regression testing
 - Eval dataset generation
 - Semantic cache analysis
 - AI gateway integration
 - OpenTelemetry export
 - Langfuse/Promptfoo/Ragas interoperability
+
+Important scope note: these are future possible directions, not v0.1 features.
 
 ## Current Strategy
 Start narrow.
@@ -258,4 +268,6 @@ Recommended next step:
 
 ### Next Major Step
 
-Improve warning explanation quality, add tests for warning rules and demo cases, then evaluate a semantic retriever baseline before adapter work.
+Plan v0.2 Developer Integration / User Onboarding.
+
+The immediate next step is to help developers instrument their own RAG pipelines with the Python SDK. Harness-level features remain a long-term TraceForge direction, not current implementation scope.

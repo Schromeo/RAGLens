@@ -1,5 +1,16 @@
 # Devlog
 
+## 2026-06-30 (Positioning Update: RAG Debugger -> TraceForge Direction)
+
+### Completed
+
+- Clarified long-term direction: RAGLens remains a local-first visual debugger for RAG pipelines in v0.1, while the tracing core is positioned to evolve toward TraceForge-style AI application harness observability.
+- Documented RAG as the first vertical slice because retrieval quality, context quality, conflicting evidence, and grounding are common AI failure points.
+- Updated docs to separate current implementation from future direction:
+  - v0.1 remains completed
+  - v0.2 remains Developer Integration / User Onboarding
+  - harness-level spans (tool, memory, verification, human feedback) remain future possible directions
+
 ## 2026-06-30 (Platform-Specific Script Folders)
 
 ### Completed
@@ -9,7 +20,8 @@
   - `scripts/mac` for Bash entry points
 - Added macOS shell wrappers for collector, dashboard, demo trace generation, and smoke testing.
 - Added one-click `start-all` launchers for macOS and Windows to start collector and dashboard together.
-- Updated README quickstart and shortcut commands to point at the new platform-specific script paths.
+- Replaced the split root launchers with a single cross-platform `scripts/start-all.py` entry point.
+- Updated README quickstart and shortcut commands to point at the cross-platform one-click entry point.
 
 ### Notes
 

@@ -1,15 +1,20 @@
 # Current Task
 
 ## Current Focus
-v0.1 Release MVP Complete and Demo Polish.
+Planning v0.2 Developer Integration / User Onboarding.
 
-The Python SDK, Go collector, SQLite persistence, React Dashboard MVP, and Real Local RAG Demo are all working and validated.
+RAGLens v0.1 is complete.
+
+The Python SDK, Go collector ingestion APIs, SQLite persistence, React dashboard MVP, Warning Engine / Diagnosis Layer MVP, Real Local RAG Demo, demo packaging, and final smoke validation are complete and verified.
 
 RAGLens can generate a trace from the Python SDK, send it to the local collector, persist it in SQLite, and display it in the browser dashboard with real warnings.
 
+The long-term direction has been clarified: RAGLens starts with RAG debugging and is designed to evolve toward TraceForge, a local-first observability layer for AI application harnesses.
+
 ## Current Goal
-Finalize v0.1 release presentation and prepare for v0.2 developer integration work.
-Complete dashboard UI polish and ensure all documentation is aligned.
+Make it clear how developers can instrument their own RAG pipelines with the Python SDK instead of modifying the built-in local demo.
+
+Clarify integration docs and onboarding flow without expanding implementation scope.
 
 ## Current System Status
 Completed so far:
@@ -75,8 +80,9 @@ React Dashboard
 
 Real Local RAG Demo (Completed).
 
-Current active work is documentation and demo cleanup.
-Current active work is final smoke validation and screenshot preparation.
+Current active work is planning and documentation for v0.2 Developer Integration / User Onboarding.
+
+Harness observability features are long-term direction only and are not part of the current implementation milestone.
 
 ## Files Recently Updated
 
@@ -139,3 +145,5 @@ Preparing for v0.2 Developer Integration / User Onboarding:
 - Local startup command consolidation (Docker Compose / improved scripts)
 
 LangChain/LlamaIndex adapters remain deferred until v0.2 schema and warning behavior stabilize.
+
+Tool spans, memory spans, verification spans, and human feedback spans remain future TraceForge direction and are not part of v0.2 implementation scope.
