@@ -54,6 +54,11 @@ Use this path when you want to verify that RAGLens itself works on your machine.
 
 1. Clone the RAGLens repo.
 2. Start the collector and dashboard from that repo.
+
+```bash
+python scripts/start-raglens.py
+```
+
 3. Run the built-in local demo or smoke test.
 4. Open the local dashboard and inspect the generated traces.
 
@@ -65,6 +70,11 @@ Use this path when you want to instrument an existing application.
 
 1. Clone the RAGLens repo somewhere on your machine.
 2. Start the collector and dashboard from that repo.
+
+```bash
+python scripts/start-raglens.py
+```
+
 3. In your own app's virtual environment, install the SDK from the local checkout:
 
 ```bash
@@ -105,7 +115,15 @@ Use this loop while iterating on quality:
 
 ## Start Local Services
 
-From repo root, start the two local services:
+Recommended v0.2 startup from the repo root:
+
+```bash
+python scripts/start-raglens.py
+```
+
+This repo-local helper starts the collector from `collector/go` and the dashboard from `dashboard/web`.
+
+If you need manual fallback steps, start the two local services separately:
 
 ### Collector
 

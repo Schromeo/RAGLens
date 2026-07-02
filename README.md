@@ -4,7 +4,7 @@ RAGLens is a local-first visual debugger for RAG pipelines.
 
 It helps developers inspect why a RAG application produced a bad answer by showing the full pipeline: retrieved chunks, retrieval scores, prompts, responses, and diagnostic warnings.
 
-RAGLens is designed for local development first. The default v0.1 demo is deterministic, API-key free, and runs entirely on your machine.
+RAGLens is designed for local development first. The default local demo is deterministic, API-key free, and runs entirely on your machine.
 
 ## Why RAGLens?
 
@@ -44,7 +44,7 @@ RAGLens can flag answers that introduce unsupported claims even when retrieval f
 
 ## What RAGLens shows
 
-The current v0.1 MVP supports:
+The current local MVP supports:
 
 * Python SDK tracing
 * retrieval span logging
@@ -70,67 +70,28 @@ The v0.1 warning rules are intentionally simple and deterministic. See `docs/dem
 
 ## Quickstart
 
-### 0. Start everything with one command
+### Path A: Try RAGLens with the built-in demo
 
-If you want the fastest local setup, use the single cross-platform one-click launcher.
+Use this path to validate that the local RAGLens debugging stack works on your machine.
 
-Windows PowerShell:
-
-```powershell
-.\scripts\start-all.py
-```
-
-If PowerShell refuses direct execution, use:
-
-```powershell
-python .\scripts\start-all.py
-```
-
-macOS:
+From the RAGLens repo root:
 
 ```bash
-./scripts/start-all.py
+python scripts/start-raglens.py
 ```
 
-If your shell does not honor the executable bit, use:
+This repo-local helper starts the collector from `collector/go` and the dashboard from `dashboard/web`.
 
-```bash
-python ./scripts/start-all.py
-```
+If you need a manual fallback, start the services separately.
 
-### 1. Start the collector
-
-From the repository root:
+Collector:
 
 ```bash
 cd collector/go
 go run ./cmd/raglens-collector
 ```
 
-The collector runs on:
-
-```txt
-http://localhost:4319
-```
-
-You can verify it with:
-
-```bash
-curl http://localhost:4319/health
-```
-
-Expected response:
-
-```json
-{
-  "service": "raglens-collector",
-  "status": "ok"
-}
-```
-
-### 2. Start the dashboard
-
-In another terminal:
+Dashboard:
 
 ```bash
 cd dashboard/web
@@ -138,31 +99,88 @@ npm install
 npm run dev
 ```
 
-Then open the local dashboard URL printed by the dev server.
-
-### 3. Run the local RAG demo
-
-In another terminal:
+Then run the built-in demo traces in another terminal:
 
 ```bash
 cd sdk/python
+python -m examples.local_rag_demo.run_demo trace-all
 ```
 
-PowerShell:
+PowerShell, if you want to set the collector URL explicitly:
 
 ```powershell
 $env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
 python -m examples.local_rag_demo.run_demo trace-all
 ```
 
-Bash:
+Bash, if you want to set the collector URL explicitly:
 
 ```bash
 export RAGLENS_COLLECTOR_URL="http://localhost:4319"
 python -m examples.local_rag_demo.run_demo trace-all
 ```
 
-This generates representative RAG debugging traces and sends them to the local collector.
+This validates the local RAG debugging stack and sends representative traces to the local collector.
+
+### Path B: Use RAGLens with your own RAG app
+
+Use this path when you want to instrument an existing Python RAG application instead of using only the built-in demo.
+
+1. Clone RAGLens somewhere locally.
+2. From the RAGLens repo root, start local services:
+
+```bash
+python scripts/start-raglens.py
+```
+
+3. In your own app virtual environment, install the SDK from the local checkout:
+
+```bash
+pip install -e /path/to/raglens/sdk/python
+```
+
+4. Instrument your own request path with the Python SDK:
+
+```python
+from raglens import trace
+
+
+def answer_question(user_query: str) -> str:
+    with trace(name="my-rag-request", query=user_query) as t:
+        retrieved = my_retriever(user_query)
+        chunks = to_raglens_chunks(retrieved)
+
+        t.retrieval(
+            query=user_query,
+            chunks=chunks,
+            name="primary_retrieval",
+            top_k=len(chunks),
+        )
+
+        prompt = build_prompt(user_query, chunks)
+        answer = my_answerer(prompt)
+
+        t.llm(
+            model="my-model-name",
+            prompt=prompt,
+            response=answer,
+            name="answer_generation",
+            provider="local",
+        )
+
+    t.flush()
+    return answer
+```
+
+`to_raglens_chunks(...)` represents your app-owned adapter from retriever-native results to RAGLens chunk dictionaries.
+
+Current implemented span types are `retrieval` and `llm` only.
+
+For practical integration details, see:
+
+* `docs/product/USER_ONBOARDING.md`
+* `docs/integrations/PYTHON_SDK_GUIDE.md`
+* `sdk/python/examples/custom_pipeline_demo.py`
 
 ### Windows PowerShell shortcuts
 
@@ -171,7 +189,7 @@ You can also use the provided PowerShell scripts from the repository root.
 One-click start:
 
 ```powershell
-.\scripts\start-all.py
+python .\scripts\start-raglens.py
 ```
 
 Start the collector:
@@ -205,7 +223,7 @@ On macOS, use the shell scripts in `scripts/mac`.
 One-click start:
 
 ```bash
-./scripts/start-all.py
+python ./scripts/start-raglens.py
 ```
 
 Start the collector:
@@ -287,9 +305,27 @@ Then open the dashboard and inspect:
 * `real-local-rag-hallucinated`
 * `real-local-rag-no_match`
 
+## Documentation
+
+### For users
+
+* `docs/product/USER_ONBOARDING.md` - Integrate RAGLens into an existing RAG app.
+* `docs/integrations/PYTHON_SDK_GUIDE.md` - Python SDK API usage.
+* `docs/demo/LOCAL_RAG_DEMO.md` - Deterministic local demo flow.
+* `docs/demo/SMOKE_TEST.md` - End-to-end smoke test flow.
+* `docs/demo/WARNING_RULES.md` - Current warning rules and limitations.
+
+### For contributors / maintainers
+
+* `docs/ai-context/ROADMAP.md` - Milestones and planned sequencing.
+* `docs/ai-context/DEVLOG.md` - Chronological implementation log.
+* `docs/ai-context/CURRENT_TASK.md` - Current focus and immediate next steps.
+* `docs/architecture/TRACE_DATA_MODEL.md` - Trace and span schema reference.
+* `docs/ai-context/AI_HANDOFF.md` - Latest handoff status and context.
+
 ## Current status
 
-RAGLens is currently a local-first v0.1 MVP.
+RAGLens v0.1 local MVP is complete. v0.2 developer integration and onboarding is currently being built.
 
 Completed:
 
@@ -301,6 +337,10 @@ Completed:
 * Real Local RAG Demo using local markdown docs, TF-IDF retrieval, cosine similarity, and a deterministic local answerer
 * Developer Experience / Demo Packaging
 * Smoke-tested local demo flow
+* User onboarding documentation
+* Python SDK guide
+* Custom pipeline integration example
+* Cross-platform repo-local startup helper
 
 The default demo requires no external LLM API and no API key.
 
@@ -312,17 +352,16 @@ RAGLens starts with RAG pipeline debugging because retrieval, context quality, a
 
 The longer-term direction is to evolve the tracing core into a local-first observability layer for AI application harnesses: systems that manage context, tools, memory, model calls, verification, and feedback around foundation models.
 
-In that direction, RAGLens can grow beyond retrieval and LLM spans toward tool spans, memory spans, verification spans, human feedback spans, and richer diagnostics over AI application traces.
+In that direction, RAGLens can grow beyond retrieval and LLM spans toward tool spans, memory spans, verification spans, human feedback spans, and richer diagnostics over AI application traces. Those remain future direction only and are not implemented in the current SDK.
 
 Near-term focus:
 
-* v0.1 release presentation polish
-* README screenshots and GitHub presentation
-* local demo stability
-* dashboard demo readability
-* smoke-testable developer workflow
+* make it easy to integrate RAGLens into an existing Python RAG app
+* document the Python SDK integration contract
+* keep local startup simple and cross-platform
+* add integration examples before framework-specific adapters
 
-Future integrations such as LangChain, LlamaIndex, and real LLM providers can be added later, but they are not required for the default v0.1 demo.
+Future integrations such as LangChain, LlamaIndex, and real LLM providers can be added later, but they are not required for the default local demo.
 
 ## Design principles
 
@@ -330,7 +369,7 @@ RAGLens follows a few core principles:
 
 * local-first by default
 * deterministic demo path
-* no API key required for the v0.1 demo
+* no API key required for the local demo
 * explain RAG failures instead of only displaying raw traces
 * make retrieved evidence, prompts, responses, and warnings inspectable
 * keep early warning rules simple, explicit, and documented

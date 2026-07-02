@@ -1,5 +1,136 @@
 # Devlog
 
+## 2026-07-02 (v0.2 Developer Integration / Local SDK Onboarding Completed)
+
+### Completed
+
+- Marked v0.2 Developer Integration / Local SDK Onboarding as completed.
+- Finalized onboarding and integration documentation:
+  - `docs/product/USER_ONBOARDING.md`
+  - `docs/integrations/PYTHON_SDK_GUIDE.md`
+- Added `sdk/python/examples/custom_pipeline_demo.py` and validated dashboard visibility for `custom-rag-pipeline`.
+- Added and polished `scripts/start-raglens.py` as a cross-platform repo-local startup helper.
+- Updated `README.md` with two quickstart paths:
+  - Path A: built-in demo
+  - Path B: own RAG app integration
+- Added root README documentation map to separate user docs from maintainer docs.
+- Completed SDK packaging hygiene:
+  - `sdk/python` package version set to `0.2.0`
+  - added `sdk/python/README.md`
+  - `pyproject.toml` `readme` points to the local SDK README
+  - editable install remains the supported v0.2 path
+
+### Validation
+
+Validated the v0.2 integration flow with:
+
+```bash
+python scripts/start-raglens.py
+cd sdk/python
+python -m examples.custom_pipeline_demo
+python -m examples.local_rag_demo.run_demo trace-all
+```
+
+Observed results:
+
+- Dashboard showed `custom-rag-pipeline`.
+- Dashboard showed built-in local RAG demo traces and warning-focused cases.
+
+### Notes
+
+- Current implemented span types remain `retrieval` and `llm` only.
+- Current warning rules remain:
+  - `no_retrieved_chunks`
+  - `low_retrieval_score`
+  - `duplicate_chunks`
+  - `conflicting_chunks`
+  - simplified `answer_not_grounded`
+- v0.3 recommended next focus is RAG Quality Analysis / Diagnostic Intelligence.
+
+## 2026-07-02 (v0.2 Developer Integration / Local SDK Onboarding Core Complete)
+
+### Completed
+
+- Completed the core v0.2 Developer Integration / Local SDK Onboarding work.
+- Added and refined user onboarding documentation:
+  - `docs/product/USER_ONBOARDING.md`
+  - `docs/integrations/PYTHON_SDK_GUIDE.md`
+- Added `sdk/python/examples/custom_pipeline_demo.py` as a minimal deterministic integration example.
+- Added and polished `scripts/start-raglens.py` as a cross-platform repo-local startup helper.
+- Updated `README.md` to document two quickstart paths:
+  - Path A: try RAGLens with the built-in demo
+  - Path B: use RAGLens with your own RAG app
+
+### Validation
+
+Validated the v0.2 integration flow with the following commands:
+
+```bash
+python scripts/start-raglens.py
+cd sdk/python
+python -m examples.custom_pipeline_demo
+python -m examples.local_rag_demo.run_demo trace-all
+```
+
+Observed result:
+
+- `custom-rag-pipeline` was visible in the dashboard.
+- Built-in local RAG demo traces were visible in the dashboard.
+- Warning-focused demo traces and warning cards were visible in the dashboard.
+
+### Notes
+
+- Current implemented span types remain `retrieval` and `llm` only.
+- Current warning rules remain:
+  - `no_retrieved_chunks`
+  - `low_retrieval_score`
+  - `duplicate_chunks`
+  - `conflicting_chunks`
+  - simplified `answer_not_grounded`
+- v0.2 is core complete and in final documentation polish.
+
+## 2026-07-02 (Startup Guidance Sync)
+
+### Completed
+
+- Unified startup guidance across `README.md`, `docs/product/USER_ONBOARDING.md`, and `docs/integrations/PYTHON_SDK_GUIDE.md`.
+- Standardized the recommended v0.2 local startup command to `python scripts/start-raglens.py`.
+- Kept manual collector/dashboard startup steps as fallback paths where useful.
+
+## 2026-07-02 (Repo-Local Startup Helper Polish)
+
+### Completed
+
+- Added `scripts/start-raglens.py` as the recommended repo-local v0.2 startup helper.
+- Kept the helper dependency-free and cross-platform:
+  - starts collector from `collector/go`
+  - starts dashboard from `dashboard/web`
+  - uses `npm.cmd` on Windows and `npm` on macOS/Linux
+  - terminates the sibling process if either child exits first
+  - handles Ctrl+C / SIGTERM with terminate-then-kill cleanup
+- Updated `docs/integrations/PYTHON_SDK_GUIDE.md` to document:
+  - the repo-local startup helper
+  - Bash and PowerShell collector URL environment variable setup
+  - explicit `POST {collector_url}/api/traces` flush target
+  - collector-running prerequisite for the custom pipeline demo
+
+## 2026-07-02 (Python SDK Guide)
+
+### Completed
+
+- Added `docs/integrations/PYTHON_SDK_GUIDE.md` as a practical API usage guide for the current Python SDK.
+- Documented only the currently implemented v0.2 SDK surface:
+  - `trace(...)`
+  - `retrieval(...)`
+  - `llm(...)`
+  - `flush(...)`
+- Captured current SDK behaviors and limitations:
+  - prompt and messages support for LLM spans
+  - retrieval chunk shallow-copy and defaulting behavior
+  - flush timing requirements
+  - trace error-state behavior when exceptions escape the context
+  - local editable install as the current supported integration path
+
 ## 2026-07-02 (v0.2 User Onboarding Guide)
 
 ### Completed
@@ -271,29 +402,6 @@ Expand warning coverage with the next rules:
 - `duplicate_chunks`
 - simplified `answer_not_grounded`
 
-## 2026-05-14
-
-### Completed
-
-- Chose RAGLens as the first product cut.
-- Defined the long-term path: RAGLens -> AgentOps Lite -> TraceForge.
-- Decided to start with a local-first visual debugger for RAG pipelines.
-- Created the initial repository documentation plan.
-
-### Key Decisions
-
-- Start narrow with RAG debugging instead of building a full LLMOps platform.
-- Keep v0.1 local-first.
-- Prioritize usability, visual clarity, and easy setup.
-- Use project docs as long-term memory for AI collaboration.
-
-### Next
-
-- Create the initial repo structure.
-- Write PRODUCT_SPEC.md.
-- Design the trace/span data model.
-- Decide the first implementation order.
-
 ## 2026-05-15
 
 ### Completed
@@ -340,7 +448,28 @@ Expand warning coverage with the next rules:
   - `custom`
 - Warning rules will start as lightweight heuristics, not ML-based evaluation.
 
-### Validation
+## 2026-05-14
+
+### Completed
+
+- Chose RAGLens as the first product cut.
+- Defined the long-term path: RAGLens -> AgentOps Lite -> TraceForge.
+- Decided to start with a local-first visual debugger for RAG pipelines.
+- Created the initial repository documentation plan.
+
+### Key Decisions
+
+- Start narrow with RAG debugging instead of building a full LLMOps platform.
+- Keep v0.1 local-first.
+- Prioritize usability, visual clarity, and easy setup.
+- Use project docs as long-term memory for AI collaboration.
+
+### Next
+
+- Create the initial repo structure.
+- Write PRODUCT_SPEC.md.
+- Design the trace/span data model.
+- Decide the first implementation order.
 
 Ran the refund policy demo locally:
 

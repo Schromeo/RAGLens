@@ -1,22 +1,27 @@
 # Current Task
 
 ## Current Focus
-Planning v0.2 Developer Integration / User Onboarding.
 
 RAGLens v0.1 is complete.
 
-The Python SDK, Go collector ingestion APIs, SQLite persistence, React dashboard MVP, Warning Engine / Diagnosis Layer MVP, Real Local RAG Demo, demo packaging, and final smoke validation are complete and verified.
+RAGLens v0.2 Developer Integration / Local SDK Onboarding is implemented, packaged locally, documented, and smoke-tested.
 
-RAGLens can generate a trace from the Python SDK, send it to the local collector, persist it in SQLite, and display it in the browser dashboard with real warnings.
+The project now has:
 
-The long-term direction has been clarified: RAGLens starts with RAG debugging and is designed to evolve toward TraceForge, a local-first observability layer for AI application harnesses.
+* user onboarding documentation
+* a Python SDK integration guide
+* a custom pipeline integration example
+* a cross-platform repo-local startup helper
+* a README that explains both the built-in demo path and the real SDK integration path
+* SDK packaging hygiene for the local editable install path
+* a root README documentation map to separate user docs from maintainer docs
 
 ## Current Goal
-Make it clear how developers can instrument their own RAG pipelines with the Python SDK instead of modifying the built-in local demo.
 
-Clarify integration docs and onboarding flow without expanding implementation scope.
+Close out v0.2 status documentation and select/design v0.3 RAG Quality Analysis / Diagnostic Intelligence.
 
 ## Current System Status
+
 Completed so far:
 
 - Product direction defined
@@ -27,7 +32,6 @@ Completed so far:
 - Retrieval span logging implemented
 - LLM span logging implemented
 - SDK `flush()` implemented
-- Refund policy demo created
 - Go collector created
 - SQLite persistence implemented
 - Collector trace ingestion implemented
@@ -44,19 +48,12 @@ Completed so far:
   - `duplicate_chunks`
   - `conflicting_chunks`
   - simplified `answer_not_grounded`
-- Warning persistence after trace ingestion implemented
-- Dashboard real warning cards implemented
-- Dashboard null-warning crash fixed
-- `.gitignore` updated for local artifacts
-- Warning smoke test implemented: `sdk/python/examples/warning_rules_demo.py`
-- Real Local RAG Demo completed:
-  - local markdown policy docs
-  - local document loader
-  - deterministic chunking
-  - TF-IDF + cosine retriever
-  - simple local answerer
-  - demo case matrix
-  - traced cases verified against collector on `:4319`
+- Real Local RAG Demo completed and verified
+- `docs/product/USER_ONBOARDING.md` completed
+- `docs/integrations/PYTHON_SDK_GUIDE.md` completed
+- `sdk/python/examples/custom_pipeline_demo.py` added
+- `scripts/start-raglens.py` added and polished
+- `README.md` updated with two Quickstart paths
 
 ## Current Working Path
 
@@ -78,72 +75,73 @@ React Dashboard
 
 ## Current Milestone
 
-Real Local RAG Demo (Completed).
+v0.2 Developer Integration / Local SDK Onboarding.
 
-Current active work is planning and documentation for v0.2 Developer Integration / User Onboarding.
+Status: completed.
 
-Harness observability features are long-term direction only and are not part of the current implementation milestone.
+## Smoke-Tested Validation
+
+The following commands passed:
+
+```bash
+python scripts/start-raglens.py
+cd sdk/python
+python -m examples.custom_pipeline_demo
+python -m examples.local_rag_demo.run_demo trace-all
+```
+
+Verified in dashboard:
+
+- `custom-rag-pipeline`
+- built-in local RAG demo traces
+- warning-focused demo traces and warning cards
 
 ## Files Recently Updated
 
-Documentation (synchronized with v0.1 completion):
+- `README.md` - two-path v0.2 quickstart for built-in demo and real SDK integration
+- `docs/product/USER_ONBOARDING.md` - developer onboarding flow for existing RAG apps
+- `docs/integrations/PYTHON_SDK_GUIDE.md` - current Python SDK API guide
+- `sdk/python/examples/custom_pipeline_demo.py` - minimal local integration example
+- `scripts/start-raglens.py` - cross-platform repo-local startup helper
+- `sdk/python/pyproject.toml` - SDK package version and README path aligned for v0.2
+- `sdk/python/README.md` - concise SDK package README for local install and API usage
+- `docs/ai-context/ROADMAP.md` - v0.2 status updated
+- `docs/ai-context/DEVLOG.md` - v0.2 completion notes
+- `docs/ai-context/AI_HANDOFF.md` - refreshed handoff and next milestone options
 
-- `README.md` - added Screenshots section with trace overview, conflict, and grounding examples
-- `docs/ai-context/ROADMAP.md` - marked v0.1 complete, outlined v0.2 developer integration
-- `docs/ai-context/DEVLOG.md` - latest entries document final smoke validation and UI polish
-- `docs/ai-context/AI_HANDOFF.md` - updated with v0.1 completion status
-- `sdk/python/examples/local_rag_demo/README.md` - demo runbook complete
-- `docs/demo/LOCAL_RAG_DEMO.md` - demo documentation complete
-- `docs/demo/WARNING_RULES.md` - warning rule documentation complete
-- `docs/demo/SMOKE_TEST.md` - smoke test guide complete
+## Current Implementation Limits
 
-## Initial Warning Rules
+Current implemented span types:
 
-Warning rules implemented in v0.1:
+- `retrieval`
+- `llm`
 
-- [x] `no_retrieved_chunks`
-- [x] `low_retrieval_score`
-- [x] `duplicate_chunks`
-- [x] `conflicting_chunks`
-- [x] simplified `answer_not_grounded`
+Current warning rules:
 
-Smoke test entrypoint:
+- `no_retrieved_chunks`
+- `low_retrieval_score`
+- `duplicate_chunks`
+- `conflicting_chunks`
+- simplified `answer_not_grounded`
 
-- `python -m examples.warning_rules_demo all`
-- expected result: each case returns `warnings_generated: 1`
+Still not implemented:
 
-## Key Decision
+- tool spans
+- memory spans
+- verification spans
+- human feedback spans
+- agent tracing
+- cloud sync
+- hosted collector
+- auth
+- full LLM-as-judge grounding evaluation
 
-Warning generation should live in the Go collector for v0.1.
+## Next Task
 
-Reason:
+Choose and design v0.3 RAG Quality Analysis / Diagnostic Intelligence.
 
-The collector already receives the full trace payload, owns local persistence, and can generate warnings immediately after storing traces and spans.
+Recommended next options:
 
-The Python SDK should remain lightweight and focused on instrumentation.
-
-## v0.1 Validation Complete
-
-All validation gates passed:
-
-- [x] run scripts from clean root invocation and record pass/fail
-- [x] validate expected warning mapping for five local RAG demo traces
-- [x] capture dashboard screenshots for conflict/hallucinated/no_match traces
-- [x] freeze demo docs for handoff
-- [x] dashboard UI polish (sidebar text truncation, Final answer card resizing)
-- [x] README aligned with screenshots and current feature set
-- [x] ROADMAP and docs synchronized
-
-## Next Milestone
-
-Preparing for v0.2 Developer Integration / User Onboarding:
-
-- User onboarding documentation
-- Python SDK integration guide
-- Custom pipeline example
-- Stable trace/chunk schema documentation
-- Local startup command consolidation (Docker Compose / improved scripts)
-
-LangChain/LlamaIndex adapters remain deferred until v0.2 schema and warning behavior stabilize.
-
-Tool spans, memory spans, verification spans, and human feedback spans remain future TraceForge direction and are not part of v0.2 implementation scope.
+1. Define warning schema v2 and evidence-backed warning detail payloads.
+2. Design improved grounding/retrieval diagnostics and dashboard warning details.
+3. Keep optional LLM-assisted diagnostics as later/future, not default local path.
