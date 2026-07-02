@@ -44,6 +44,43 @@ You should already have your own:
 - LLM call(s)
 - answer assembly
 
+## Two Ways to Use RAGLens
+
+RAGLens v0.2 has two practical local-first entry points.
+
+### 1. Try the built-in demo
+
+Use this path when you want to verify that RAGLens itself works on your machine.
+
+1. Clone the RAGLens repo.
+2. Start the collector and dashboard from that repo.
+3. Run the built-in local demo or smoke test.
+4. Open the local dashboard and inspect the generated traces.
+
+Use this only to verify the RAGLens stack. Do not modify `local_rag_demo` for real usage.
+
+### 2. Integrate RAGLens into your own RAG app
+
+Use this path when you want to instrument an existing application.
+
+1. Clone the RAGLens repo somewhere on your machine.
+2. Start the collector and dashboard from that repo.
+3. In your own app's virtual environment, install the SDK from the local checkout:
+
+```bash
+pip install -e /path/to/raglens/sdk/python
+```
+
+4. Import `trace` from `raglens`.
+5. Wrap your own RAG request path.
+6. Log retrieval and LLM spans.
+7. Call `flush()` after the trace context exits.
+8. Inspect traces in the local dashboard.
+
+This is the actual v0.2 onboarding path for real integration.
+
+Future releases may support `pip install raglens`, CLI startup helpers, or Docker Compose shortcuts, but those are not the current v0.2 flow.
+
 ## How RAGLens Fits Into an Existing RAG App
 
 RAGLens wraps what you already do.
@@ -95,13 +132,22 @@ Keep collector at `http://localhost:4319` for local SDK flushes.
 
 ## Use the Python SDK
 
-If your app is outside this monorepo, install from package once published.
-Until a package is published, editable install from this repo is the current local development path:
+v0.2 uses local editable install from a repo checkout.
+
+If you are working inside the RAGLens repo:
 
 ```bash
 cd sdk/python
 pip install -e .
 ```
+
+If you are installing the SDK into another local project:
+
+```bash
+pip install -e /path/to/raglens/sdk/python
+```
+
+Do not assume PyPI installation is available yet.
 
 Basic import:
 
