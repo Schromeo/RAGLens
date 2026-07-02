@@ -1,5 +1,22 @@
 # Devlog
 
+## 2026-07-02 (v0.2 User Onboarding Guide)
+
+### Completed
+
+- Added `docs/product/USER_ONBOARDING.md` for Developer Integration / User Onboarding.
+- Documented practical integration for existing RAG pipelines using the Python SDK (without modifying `local_rag_demo`).
+- Captured clear positioning boundaries:
+  - RAGLens is a local-first tracing and debugging layer for RAG pipelines.
+  - RAGLens is not a chatbot framework, vector DB, training framework, hosted platform, or app replacement.
+- Included concrete guidance for:
+  - local service startup (collector + dashboard)
+  - wrapping request paths with `trace(...)`
+  - logging `retrieval` and `llm` spans
+  - calling `flush()` after exiting the trace context
+  - chunk object field expectations (required vs recommended)
+  - current warning analysis scope and current non-goals/limitations
+
 ## 2026-06-30 (Positioning Update: RAG Debugger -> TraceForge Direction)
 
 ### Completed
