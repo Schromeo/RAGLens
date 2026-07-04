@@ -1,5 +1,17 @@
 # Devlog
 
+## 2026-07-03 (Future Agent Harness Observability Direction Documented)
+
+### Completed
+
+- Added documentation-only positioning updates for future agent harness observability.
+- Clarified that future direction may include:
+  - running traces for multi-step harness executions
+  - partial span ingestion
+  - future `agent` / `tool` / `retry` span types
+  - diagnostics for agent loops, oscillation, retry storms, and no-progress execution
+- Explicitly marked all of the above as not implemented in current RAGLens.
+
 ## 2026-07-02 (v0.2 Developer Integration / Local SDK Onboarding Completed)
 
 ### Completed

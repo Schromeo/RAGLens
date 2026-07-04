@@ -131,6 +131,10 @@ Still not implemented:
 - verification spans
 - human feedback spans
 - agent tracing
+- running traces for multi-step agent harness executions
+- partial span ingestion
+- retry spans
+- diagnostics for agent loops, oscillation, retry storms, and no-progress execution
 - cloud sync
 - hosted collector
 - auth
@@ -145,3 +149,7 @@ Recommended next options:
 1. Define warning schema v2 and evidence-backed warning detail payloads.
 2. Design improved grounding/retrieval diagnostics and dashboard warning details.
 3. Keep optional LLM-assisted diagnostics as later/future, not default local path.
+
+Future TraceForge direction note:
+
+- agent harness observability capabilities (running traces, partial ingestion, agent/tool/retry spans, and no-progress diagnostics) remain future-only and are not part of current implementation scope.

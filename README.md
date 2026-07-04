@@ -354,6 +354,8 @@ The longer-term direction is to evolve the tracing core into a local-first obser
 
 In that direction, RAGLens can grow beyond retrieval and LLM spans toward tool spans, memory spans, verification spans, human feedback spans, and richer diagnostics over AI application traces. Those remain future direction only and are not implemented in the current SDK.
 
+Future agent harness observability may also include running traces across multi-step executions, partial span ingestion, and additional span types such as agent, tool, and retry spans, plus diagnostics for agent loops, oscillation, retry storms, and no-progress execution. These are not implemented in current RAGLens.
+
 Near-term focus:
 
 * make it easy to integrate RAGLens into an existing Python RAG app

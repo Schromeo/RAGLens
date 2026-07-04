@@ -132,6 +132,10 @@ Current scope limits:
 * no raw OpenAI or Anthropic integration guides in current scope
 * no cloud sync, auth, hosted collector, or hosted features
 * no full LLM-as-judge grounding evaluator
+* no running-trace lifecycle handling for multi-step agent harnesses
+* no partial span ingestion
+* no retry spans
+* no diagnostics for agent loops, oscillation, retry storms, or no-progress execution
 
 ## Current Positioning
 
@@ -177,3 +181,12 @@ Still future direction only, not current implementation:
 * hosted collector
 * auth
 * full harness-level TraceForge behavior
+
+## Future Agent Harness Observability Direction
+
+Future possible TraceForge direction (not implemented in current RAGLens):
+
+* running traces for multi-step agent/harness executions
+* partial span ingestion for long-running/interrupted runs
+* additional span types such as `agent`, `tool`, and `retry`
+* diagnostics for agent loops, oscillation, retry storms, and no-progress execution

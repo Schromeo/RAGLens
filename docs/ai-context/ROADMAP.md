@@ -241,3 +241,24 @@ Still not part of this milestone by default:
 * tool/memory/verification/human feedback spans
 
 These remain future direction only and are intentionally separate from current v0.2 scope.
+
+---
+
+## Future — Agent Harness Observability (TraceForge Direction)
+
+**Status:** Future
+
+Potential future direction after current milestones:
+
+* running traces for multi-step agent/harness executions
+* partial span ingestion for long-running or interrupted runs
+* future span types such as `agent`, `tool`, and `retry`
+* diagnostics for agent loops
+* diagnostics for oscillation between states/actions
+* diagnostics for retry storms
+* diagnostics for no-progress execution
+
+Important scope note:
+
+* none of the above is implemented in current RAGLens
+* this direction is not part of current v0.2 completion scope

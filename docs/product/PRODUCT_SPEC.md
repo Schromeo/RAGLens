@@ -235,6 +235,8 @@ The broader product direction is local-first observability for AI application ha
 
 RAGLens should preserve a general trace/span foundation so future versions can support additional span types beyond retrieval and LLM calls.
 
+Future harness-observability expansion can include running traces, partial span ingestion, and span types such as agent, tool, and retry, with diagnostics for agent loops, oscillation, retry storms, and no-progress execution. This is future direction only and is not implemented in current RAGLens.
+
 ## Product Principle
 
 RAGLens should feel like a developer tool, not an enterprise observability platform.
