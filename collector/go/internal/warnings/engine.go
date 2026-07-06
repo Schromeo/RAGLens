@@ -14,12 +14,13 @@ import (
 )
 
 const (
-	TypeConflictingChunks = "conflicting_chunks"
-	TypeNoRetrievedChunks = "no_retrieved_chunks"
-	TypeLowRetrievalScore = "low_retrieval_score"
-	TypeDuplicateChunks   = "duplicate_chunks"
-	TypeAnswerNotGrounded = "answer_not_grounded"
-	TypeNumericMismatch   = "numeric_mismatch"
+	TypeConflictingChunks     = "conflicting_chunks"
+	TypeNoRetrievedChunks     = "no_retrieved_chunks"
+	TypeLowRetrievalScore     = "low_retrieval_score"
+	TypeWeakQueryChunkOverlap = "weak_query_chunk_overlap"
+	TypeDuplicateChunks       = "duplicate_chunks"
+	TypeAnswerNotGrounded     = "answer_not_grounded"
+	TypeNumericMismatch       = "numeric_mismatch"
 
 	SeverityInfo    = "info"
 	SeverityWarning = "warning"
@@ -39,6 +40,7 @@ func (e *Engine) Generate(payload models.TracePayload) []models.Warning {
 
 	result = append(result, e.detectNoRetrievedChunks(payload)...)
 	result = append(result, e.detectLowRetrievalScore(payload)...)
+	result = append(result, e.detectWeakQueryChunkOverlap(payload)...)
 	result = append(result, e.detectDuplicateChunks(payload)...)
 	result = append(result, e.detectConflictingChunks(payload)...)
 	result = append(result, e.detectNumericMismatch(payload)...)
@@ -107,6 +109,8 @@ func defaultWarningTitle(warningType string) string {
 		return "No retrieved chunks"
 	case TypeLowRetrievalScore:
 		return "Low retrieval score"
+	case TypeWeakQueryChunkOverlap:
+		return "Weak query/chunk overlap"
 	case TypeDuplicateChunks:
 		return "Duplicate retrieved chunks"
 	case TypeConflictingChunks:
@@ -122,7 +126,7 @@ func defaultWarningTitle(warningType string) string {
 
 func defaultWarningCategory(warningType string) string {
 	switch warningType {
-	case TypeNoRetrievedChunks, TypeLowRetrievalScore, TypeDuplicateChunks:
+	case TypeNoRetrievedChunks, TypeLowRetrievalScore, TypeWeakQueryChunkOverlap, TypeDuplicateChunks:
 		return "retrieval"
 	case TypeConflictingChunks:
 		return "conflict"
@@ -147,6 +151,8 @@ func defaultRecommendedAction(warningType string) string {
 		return "Inspect the retrieval step and verify that the query, index, and filters can return at least one relevant chunk."
 	case TypeLowRetrievalScore:
 		return "Inspect query quality and retrieval ranking, then verify that the retriever is surfacing relevant context."
+	case TypeWeakQueryChunkOverlap:
+		return "Inspect retrieval query construction, chunk content, and ranking because the retrieved text does not appear to cover important query terms."
 	case TypeDuplicateChunks:
 		return "Inspect chunking and deduplication so repeated context does not crowd out distinct evidence."
 	case TypeConflictingChunks:
@@ -490,6 +496,248 @@ func (e *Engine) detectLowRetrievalScore(payload models.TracePayload) []models.W
 	}
 
 	return result
+}
+
+type queryChunkOverlapResult struct {
+	Chunk        retrievedChunk
+	ChunkRank    int
+	MatchedTerms []string
+	MissingTerms []string
+	OverlapRatio float64
+}
+
+func (e *Engine) detectWeakQueryChunkOverlap(payload models.TracePayload) []models.Warning {
+	query, querySpanID := extractTraceQuery(payload)
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return nil
+	}
+
+	queryTerms := importantQueryTerms(query)
+	if len(queryTerms) == 0 {
+		return nil
+	}
+
+	chunks := extractRetrievedChunks(payload.Spans)
+	if len(chunks) == 0 {
+		return nil
+	}
+
+	topK := 3
+	if len(chunks) < topK {
+		topK = len(chunks)
+	}
+
+	results := make([]queryChunkOverlapResult, 0, topK)
+	bestOverlap := 0.0
+	totalOverlap := 0.0
+	allMatchedTerms := map[string]bool{}
+
+	for i := 0; i < topK; i++ {
+		chunk := chunks[i]
+		chunkText := strings.TrimSpace(chunk.Text)
+		if chunkText == "" {
+			continue
+		}
+
+		chunkTerms := importantContextTerms(chunkText)
+		matchedTerms := sharedContextTerms(queryTerms, chunkTerms)
+		missing := missingTerms(queryTerms, matchedTerms)
+
+		overlapRatio := 0.0
+		if len(queryTerms) > 0 {
+			overlapRatio = float64(len(matchedTerms)) / float64(len(queryTerms))
+		}
+
+		for _, term := range matchedTerms {
+			allMatchedTerms[term] = true
+		}
+
+		if overlapRatio > bestOverlap {
+			bestOverlap = overlapRatio
+		}
+
+		totalOverlap += overlapRatio
+
+		results = append(results, queryChunkOverlapResult{
+			Chunk:        chunk,
+			ChunkRank:    i + 1,
+			MatchedTerms: matchedTerms,
+			MissingTerms: missing,
+			OverlapRatio: overlapRatio,
+		})
+	}
+
+	if len(results) == 0 {
+		return nil
+	}
+
+	averageOverlap := totalOverlap / float64(len(results))
+
+	overallMissingTerms := make([]string, 0)
+	for _, term := range queryTerms {
+		if !allMatchedTerms[term] {
+			overallMissingTerms = append(overallMissingTerms, term)
+		}
+	}
+	sort.Strings(overallMissingTerms)
+
+	// Conservative first version:
+	// only warn when top chunks have very weak average overlap and no strong best match.
+	if averageOverlap >= 0.35 || bestOverlap >= 0.5 {
+		return nil
+	}
+
+	primary := results[0]
+	primaryChunkID := primary.Chunk.ChunkID
+	primarySpanID := primary.Chunk.SpanID
+
+	queryDiagnosticID := newDiagnosticObjectID()
+	overlapDiagnosticID := newDiagnosticObjectID()
+
+	evidence := []models.EvidenceItem{
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "query_text",
+			Label:      "User query terms",
+			SpanID:     querySpanID,
+			Snippet:    query,
+			Attributes: models.JSONMap{
+				"query_terms": queryTerms,
+			},
+			DiagnosticObjectIDs: []string{queryDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "chunk_snippet",
+			Label:      "Top retrieved chunk with weak query overlap",
+			SpanID:     &primarySpanID,
+			ChunkID:    &primaryChunkID,
+			Source:     chunkSource(primary.Chunk),
+			Snippet:    primary.Chunk.Text,
+			Attributes: models.JSONMap{
+				"rank":          primary.ChunkRank,
+				"score":         nullableScore(primary.Chunk.Score),
+				"matched_terms": primary.MatchedTerms,
+				"missing_terms": primary.MissingTerms,
+				"overlap_ratio": primary.OverlapRatio,
+			},
+			DiagnosticObjectIDs: []string{overlapDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "overlap_measure",
+			Label:      "Query/chunk overlap measurement",
+			Snippet: fmt.Sprintf(
+				"Top-%d average overlap %.0f%%; best overlap %.0f%%.",
+				len(results),
+				averageOverlap*100,
+				bestOverlap*100,
+			),
+			Attributes: models.JSONMap{
+				"top_k":                 len(results),
+				"average_overlap_ratio": averageOverlap,
+				"best_overlap_ratio":    bestOverlap,
+				"query_terms":           queryTerms,
+				"missing_terms":         overallMissingTerms,
+			},
+		},
+	}
+
+	diagnostics := []models.DiagnosticObject{
+		{
+			DiagnosticObjectID: queryDiagnosticID,
+			Type:               "query_term_set",
+			Label:              "Important query terms",
+			SpanID:             querySpanID,
+			Text:               query,
+			Normalized: models.JSONMap{
+				"terms": queryTerms,
+			},
+			Attributes: models.JSONMap{
+				"source": "query",
+			},
+		},
+		{
+			DiagnosticObjectID: overlapDiagnosticID,
+			Type:               "overlap_result",
+			Label:              "Top retrieved chunk overlap result",
+			SpanID:             &primarySpanID,
+			Text:               primary.Chunk.Text,
+			Normalized: models.JSONMap{
+				"matched_terms": primary.MatchedTerms,
+				"missing_terms": primary.MissingTerms,
+				"overlap_ratio": primary.OverlapRatio,
+			},
+			Attributes: models.JSONMap{
+				"chunk_id": primaryChunkID,
+				"rank":     primary.ChunkRank,
+				"score":    nullableScore(primary.Chunk.Score),
+			},
+		},
+	}
+
+	signals := []models.DiagnosticSignal{
+		{
+			SignalID:   "top_k_average_overlap_below_threshold",
+			Label:      "Top-k average query/chunk overlap is below threshold",
+			Observed:   averageOverlap,
+			Expected:   "< 0.35",
+			Comparator: "less_than",
+			Strength:   "moderate",
+			Attributes: models.JSONMap{
+				"top_k": len(results),
+			},
+		},
+		{
+			SignalID:   "best_overlap_below_threshold",
+			Label:      "No retrieved chunk strongly covers the query terms",
+			Observed:   bestOverlap,
+			Expected:   "< 0.50",
+			Comparator: "less_than",
+			Strength:   "moderate",
+		},
+	}
+
+	message := fmt.Sprintf(
+		"Retrieved chunks have weak lexical overlap with the query. Missing terms: %s.",
+		strings.Join(overallMissingTerms, ", "),
+	)
+
+	return []models.Warning{
+		{
+			WarningID:     newWarningID(),
+			TraceID:       payload.Trace.TraceID,
+			SpanID:        &primarySpanID,
+			Type:          TypeWeakQueryChunkOverlap,
+			Severity:      SeverityWarning,
+			Message:       message,
+			SchemaVersion: stringPtr("2"),
+			RuleID:        stringPtr(TypeWeakQueryChunkOverlap),
+			RuleVersion:   stringPtr("1"),
+			Title:         stringPtr("Retrieved chunks weakly match the query"),
+			Category:      stringPtr("retrieval"),
+			Confidence:    float64Ptr(0.75),
+			Explanation: stringPtr(
+				"RAGLens found that the top retrieved chunks have low lexical overlap with important terms from the user query.",
+			),
+			Details: models.JSONMap{
+				"rule":                  TypeWeakQueryChunkOverlap,
+				"query":                 query,
+				"query_terms":           queryTerms,
+				"missing_terms":         overallMissingTerms,
+				"average_overlap_ratio": averageOverlap,
+				"best_overlap_ratio":    bestOverlap,
+				"top_k":                 len(results),
+				"reason":                "top retrieved chunks have weak lexical overlap with important query terms",
+			},
+			Evidence:          evidence,
+			Diagnostics:       diagnostics,
+			Signals:           signals,
+			RecommendedAction: stringPtr("Inspect the retriever query, filters, chunking, and ranking because the retrieved chunks may not address the user's question."),
+			CreatedAt:         time.Now().UTC().Format(time.RFC3339Nano),
+		},
+	}
 }
 
 func (e *Engine) detectDuplicateChunks(payload models.TracePayload) []models.Warning {
@@ -973,20 +1221,53 @@ func sentenceContaining(text string, needle string) string {
 
 var nonWordRegex = regexp.MustCompile(`[^a-z0-9]+`)
 
+func extractTraceQuery(payload models.TracePayload) (string, *string) {
+	if payload.Trace.Input != nil {
+		for _, key := range []string{"query", "question", "user_query", "input"} {
+			if query := stringFromMap(payload.Trace.Input, key); query != "" {
+				return query, nil
+			}
+		}
+	}
+
+	for _, span := range payload.Spans {
+		if span.Type != "retrieval" {
+			continue
+		}
+
+		spanID := span.SpanID
+
+		if span.Input != nil {
+			for _, key := range []string{"query", "question", "user_query", "input"} {
+				if query := stringFromMap(span.Input, key); query != "" {
+					return query, &spanID
+				}
+			}
+		}
+
+		if span.Metadata != nil {
+			for _, key := range []string{"query", "question", "user_query"} {
+				if query := stringFromMap(span.Metadata, key); query != "" {
+					return query, &spanID
+				}
+			}
+		}
+	}
+
+	return "", nil
+}
+
+func importantQueryTerms(query string) []string {
+	return importantTermsWithStopwords(query, queryStopwords())
+}
+
 func importantContextTerms(text string) []string {
+	return importantTermsWithStopwords(text, contextStopwords())
+}
+
+func importantTermsWithStopwords(text string, stopwords map[string]bool) []string {
 	normalized := strings.ToLower(text)
 	normalized = nonWordRegex.ReplaceAllString(normalized, " ")
-
-	stopwords := map[string]bool{
-		"a": true, "an": true, "the": true, "and": true, "or": true, "but": true,
-		"is": true, "are": true, "was": true, "were": true, "be": true, "been": true,
-		"to": true, "of": true, "in": true, "on": true, "for": true, "with": true,
-		"within": true, "from": true, "by": true, "at": true, "as": true,
-		"can": true, "may": true, "must": true, "should": true, "will": true,
-		"customers": true, "customer": true, "users": true, "user": true,
-		"days": true, "day": true, "business": true, "months": true, "month": true,
-		"years": true, "year": true, "hours": true, "hour": true,
-	}
 
 	seen := map[string]bool{}
 	result := make([]string, 0)
@@ -1009,6 +1290,52 @@ func importantContextTerms(text string) []string {
 		}
 
 		seen[term] = true
+		result = append(result, term)
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
+func queryStopwords() map[string]bool {
+	stopwords := contextStopwords()
+	for _, term := range []string{
+		"what", "when", "where", "which", "who", "whom", "whose", "why", "how",
+		"tell", "show", "give", "find", "need", "want", "know", "please",
+		"does", "do", "did", "doing", "about",
+	} {
+		stopwords[term] = true
+	}
+
+	return stopwords
+}
+
+func contextStopwords() map[string]bool {
+	return map[string]bool{
+		"a": true, "an": true, "the": true, "and": true, "or": true, "but": true,
+		"is": true, "are": true, "was": true, "were": true, "be": true, "been": true,
+		"to": true, "of": true, "in": true, "on": true, "for": true, "with": true,
+		"within": true, "from": true, "by": true, "at": true, "as": true,
+		"can": true, "may": true, "must": true, "should": true, "will": true,
+		"customers": true, "customer": true, "users": true, "user": true,
+		"days": true, "day": true, "business": true, "months": true, "month": true,
+		"years": true, "year": true, "hours": true, "hour": true,
+	}
+}
+
+func missingTerms(allTerms []string, matchedTerms []string) []string {
+	matchedSet := map[string]bool{}
+	for _, term := range matchedTerms {
+		matchedSet[term] = true
+	}
+
+	result := make([]string, 0)
+	for _, term := range allTerms {
+		if matchedSet[term] {
+			continue
+		}
+
 		result = append(result, term)
 	}
 
