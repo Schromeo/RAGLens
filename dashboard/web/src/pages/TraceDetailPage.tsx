@@ -3,7 +3,7 @@ import { fetchTraceDetail } from "../api/client";
 import ChunkCard from "../components/ChunkCard";
 import JsonViewer from "../components/JsonViewer";
 import SpanTimeline from "../components/SpanTimeline";
-import type { Chunk, Span, TraceDetailResponse } from "../types";
+import type { Chunk, EvidenceItem, Span, TraceDetailResponse, Warning } from "../types";
 
 type Props = {
   traceId: string;
@@ -25,7 +25,7 @@ export default function TraceDetailPage({ traceId }: Props) {
       const normalizedData = {
         ...data,
         spans: data.spans ?? [],
-        warnings: data.warnings ?? [],
+        warnings: (data.warnings ?? []).map(normalizeWarning),
       };
 
       setDetail(normalizedData);
@@ -143,15 +143,40 @@ export default function TraceDetailPage({ traceId }: Props) {
               {detail.warnings.map((warning) => (
                 <div key={warning.warning_id} className="warning-card">
                   <div className="warning-card-header">
-                    <strong>{formatWarningType(warning.type)}</strong>
+                    <strong>{getWarningTitle(warning)}</strong>
                     <span className="warning-severity">{warning.severity}</span>
                   </div>
 
-                  <p>{warning.message}</p>
+                  {hasEnhancedWarning(warning) ? (
+                    <>
+                      <div className="warning-meta-row">
+                        {warning.category ? (
+                          <span className="warning-meta-badge">{warning.category}</span>
+                        ) : null}
+                        {hasNumericConfidence(warning.confidence) ? (
+                          <span className="warning-meta-badge warning-meta-badge-secondary">
+                            {formatConfidence(warning.confidence)}
+                          </span>
+                        ) : null}
+                      </div>
 
-                  <div className="warning-help">
-                    {getWarningHelpText(warning.type)}
-                  </div>
+                      <p>{warning.explanation || warning.message}</p>
+
+                      {renderEvidencePreview(warning.evidence ?? [])}
+
+                      <div className="warning-help">
+                        {warning.recommended_action || getWarningHelpText(warning.type)}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p>{warning.message}</p>
+
+                      <div className="warning-help">
+                        {getWarningHelpText(warning.type)}
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -258,6 +283,68 @@ function getChunks(span: Span): Chunk[] {
   }
 
   return raw as Chunk[];
+}
+
+function normalizeWarning(warning: Warning): Warning {
+  return {
+    ...warning,
+    details: warning.details ?? {},
+    confidence: hasNumericConfidence(warning.confidence)
+      ? warning.confidence
+      : null,
+    evidence: warning.evidence ?? [],
+    diagnostics: warning.diagnostics ?? [],
+    signals: warning.signals ?? [],
+  };
+}
+
+function hasNumericConfidence(
+  confidence: Warning["confidence"],
+): confidence is number {
+  return typeof confidence === "number" && Number.isFinite(confidence);
+}
+
+function formatConfidence(confidence: number): string {
+  const percent = confidence >= 0 && confidence <= 1
+    ? confidence * 100
+    : confidence;
+
+  return `${Math.round(percent)}% confidence`;
+}
+
+function hasEnhancedWarning(warning: Warning): boolean {
+  return Boolean(
+    warning.schema_version ||
+      warning.title ||
+      warning.category ||
+      hasNumericConfidence(warning.confidence) ||
+      warning.explanation ||
+      (warning.evidence?.length ?? 0) > 0,
+  );
+}
+
+function getWarningTitle(warning: Warning): string {
+  return warning.title || formatWarningType(warning.type);
+}
+
+function renderEvidencePreview(evidence: EvidenceItem[]) {
+  if (evidence.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="warning-evidence-preview">
+      <div className="warning-section-label">Evidence</div>
+      <ul>
+        {evidence.slice(0, 2).map((item, index) => (
+          <li key={item.evidence_id ?? `${item.type}-${index}`}>
+            <strong>{item.label}</strong>
+            {item.snippet ? `: ${item.snippet}` : ""}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function formatWarningType(type: string): string {

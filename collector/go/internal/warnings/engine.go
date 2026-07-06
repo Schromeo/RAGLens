@@ -42,7 +42,334 @@ func (e *Engine) Generate(payload models.TracePayload) []models.Warning {
 	result = append(result, e.detectConflictingChunks(payload)...)
 	result = append(result, e.detectAnswerNotGrounded(payload)...)
 
-	return result
+	return enrichWarnings(result)
+}
+
+func enrichWarnings(warnings []models.Warning) []models.Warning {
+	for i := range warnings {
+		applyWarningSchemaV2Defaults(&warnings[i])
+	}
+
+	return warnings
+}
+
+func applyWarningSchemaV2Defaults(warning *models.Warning) {
+	if warning == nil {
+		return
+	}
+
+	if warning.SchemaVersion == nil {
+		warning.SchemaVersion = stringPtr("2")
+	}
+
+	if warning.RuleID == nil {
+		warning.RuleID = stringPtr(warning.Type)
+	}
+
+	if warning.RuleVersion == nil {
+		warning.RuleVersion = stringPtr("1")
+	}
+
+	if warning.Title == nil {
+		warning.Title = stringPtr(defaultWarningTitle(warning.Type))
+	}
+
+	if warning.Category == nil {
+		warning.Category = stringPtr(defaultWarningCategory(warning.Type))
+	}
+
+	if warning.Explanation == nil {
+		warning.Explanation = stringPtr(defaultWarningExplanation(*warning))
+	}
+
+	if warning.RecommendedAction == nil {
+		warning.RecommendedAction = stringPtr(defaultRecommendedAction(warning.Type))
+	}
+
+	if len(warning.Signals) == 0 {
+		warning.Signals = defaultWarningSignals(*warning)
+	}
+
+	if len(warning.Evidence) == 0 {
+		warning.Evidence = defaultWarningEvidence(*warning)
+	}
+
+	if len(warning.Diagnostics) == 0 {
+		warning.Diagnostics = defaultWarningDiagnostics(*warning)
+	}
+}
+
+func defaultWarningTitle(warningType string) string {
+	switch warningType {
+	case TypeNoRetrievedChunks:
+		return "No retrieved chunks"
+	case TypeLowRetrievalScore:
+		return "Low retrieval score"
+	case TypeDuplicateChunks:
+		return "Duplicate retrieved chunks"
+	case TypeConflictingChunks:
+		return "Conflicting retrieved chunks"
+	case TypeAnswerNotGrounded:
+		return "Answer may not be grounded"
+	default:
+		return strings.ReplaceAll(warningType, "_", " ")
+	}
+}
+
+func defaultWarningCategory(warningType string) string {
+	switch warningType {
+	case TypeNoRetrievedChunks, TypeLowRetrievalScore, TypeDuplicateChunks:
+		return "retrieval"
+	case TypeConflictingChunks:
+		return "conflict"
+	case TypeAnswerNotGrounded:
+		return "grounding"
+	default:
+		return "diagnostic"
+	}
+}
+
+func defaultWarningExplanation(warning models.Warning) string {
+	if reason, ok := warning.Details["reason"].(string); ok && strings.TrimSpace(reason) != "" {
+		return reason
+	}
+
+	return warning.Message
+}
+
+func defaultRecommendedAction(warningType string) string {
+	switch warningType {
+	case TypeNoRetrievedChunks:
+		return "Inspect the retrieval step and verify that the query, index, and filters can return at least one relevant chunk."
+	case TypeLowRetrievalScore:
+		return "Inspect query quality and retrieval ranking, then verify that the retriever is surfacing relevant context."
+	case TypeDuplicateChunks:
+		return "Inspect chunking and deduplication so repeated context does not crowd out distinct evidence."
+	case TypeConflictingChunks:
+		return "Inspect source freshness and ranking to determine which retrieved evidence should be trusted."
+	case TypeAnswerNotGrounded:
+		return "Compare the final answer against the retrieved context and check whether the model used unsupported claims."
+	default:
+		return "Inspect the trace details to understand why this diagnostic was raised."
+	}
+}
+
+func defaultWarningSignals(warning models.Warning) []models.DiagnosticSignal {
+	switch warning.Type {
+	case TypeNoRetrievedChunks:
+		return []models.DiagnosticSignal{{
+			SignalID:   "retrieved_chunk_count_zero",
+			Label:      "Retrieval returned zero chunks",
+			Observed:   0,
+			Expected:   ">0",
+			Comparator: "equal",
+			Strength:   "strong",
+		}}
+	case TypeLowRetrievalScore:
+		return []models.DiagnosticSignal{{
+			SignalID:   "top_retrieval_score_below_threshold",
+			Label:      "Top retrieval score is below threshold",
+			Observed:   warning.Details["max_score"],
+			Expected:   warning.Details["threshold"],
+			Comparator: "below_threshold",
+			Strength:   "strong",
+		}}
+	case TypeDuplicateChunks:
+		return []models.DiagnosticSignal{{
+			SignalID:   "duplicate_chunk_groups_detected",
+			Label:      "Duplicate retrieved chunk groups detected",
+			Observed:   len(jsonMapSlice(warning.Details["duplicate_groups"])),
+			Comparator: "greater_than_zero",
+			Strength:   "moderate",
+		}}
+	case TypeConflictingChunks:
+		return []models.DiagnosticSignal{{
+			SignalID:   "conflicting_retrieved_values_detected",
+			Label:      "Retrieved chunks contain conflicting values",
+			Observed:   stringSliceFromAny(warning.Details["detected_values"]),
+			Comparator: "multiple_distinct_values",
+			Strength:   "strong",
+		}}
+	case TypeAnswerNotGrounded:
+		return []models.DiagnosticSignal{{
+			SignalID:   "unsupported_answer_claim_detected",
+			Label:      "Answer contains unsupported claim values",
+			Observed:   stringSliceFromAny(warning.Details["unsupported_days"]),
+			Comparator: "not_present_in_retrieved_context",
+			Strength:   "moderate",
+		}}
+	default:
+		return nil
+	}
+}
+
+func defaultWarningEvidence(warning models.Warning) []models.EvidenceItem {
+	switch warning.Type {
+	case TypeLowRetrievalScore:
+		return []models.EvidenceItem{{
+			EvidenceID: newEvidenceID(),
+			Type:       "retrieval_stat",
+			Label:      "Top retrieval score below configured threshold",
+			SpanID:     warning.SpanID,
+			Snippet: fmt.Sprintf(
+				"max_score=%v threshold=%v",
+				warning.Details["max_score"],
+				warning.Details["threshold"],
+			),
+			Attributes: models.JSONMap{
+				"max_score": warning.Details["max_score"],
+				"threshold": warning.Details["threshold"],
+			},
+		}}
+	case TypeDuplicateChunks:
+		groups := jsonMapSlice(warning.Details["duplicate_groups"])
+		return []models.EvidenceItem{{
+			EvidenceID: newEvidenceID(),
+			Type:       "retrieval_stat",
+			Label:      "Duplicate retrieved chunk groups",
+			Snippet:    fmt.Sprintf("%d duplicate groups detected", len(groups)),
+			Attributes: models.JSONMap{
+				"duplicate_groups": groups,
+			},
+		}}
+	case TypeConflictingChunks:
+		values := stringSliceFromAny(warning.Details["detected_values"])
+		return []models.EvidenceItem{{
+			EvidenceID: newEvidenceID(),
+			Type:       "conflict_pair",
+			Label:      "Conflicting values detected in retrieved chunks",
+			Snippet:    strings.Join(values, " vs "),
+			Attributes: models.JSONMap{
+				"detected_values": values,
+				"source_chunks":   warning.Details["source_chunks"],
+			},
+		}}
+	case TypeAnswerNotGrounded:
+		answer, _ := warning.Details["answer"].(string)
+		if strings.TrimSpace(answer) == "" {
+			return nil
+		}
+
+		return []models.EvidenceItem{{
+			EvidenceID: newEvidenceID(),
+			Type:       "answer_snippet",
+			Label:      "Final answer under review",
+			SpanID:     warning.SpanID,
+			Snippet:    answer,
+		}}
+	default:
+		return nil
+	}
+}
+
+func defaultWarningDiagnostics(warning models.Warning) []models.DiagnosticObject {
+	switch warning.Type {
+	case TypeConflictingChunks:
+		values := stringSliceFromAny(warning.Details["detected_values"])
+		if len(values) == 0 {
+			return nil
+		}
+
+		return []models.DiagnosticObject{{
+			DiagnosticObjectID: newDiagnosticObjectID(),
+			Type:               "conflict_group",
+			Label:              "Conflicting retrieved values",
+			Normalized: models.JSONMap{
+				"values": values,
+			},
+			Attributes: models.JSONMap{
+				"source_chunks": warning.Details["source_chunks"],
+			},
+		}}
+	case TypeAnswerNotGrounded:
+		unsupported := stringSliceFromAny(warning.Details["unsupported_days"])
+		if len(unsupported) == 0 {
+			return nil
+		}
+
+		return []models.DiagnosticObject{{
+			DiagnosticObjectID: newDiagnosticObjectID(),
+			Type:               "numeric_claim",
+			Label:              "Unsupported answer values",
+			SpanID:             warning.SpanID,
+			Text:               strings.Join(unsupported, ", "),
+			Normalized: models.JSONMap{
+				"unsupported_days": unsupported,
+			},
+		}}
+	default:
+		return nil
+	}
+}
+
+func stringPtr(value string) *string {
+	return &value
+}
+
+func stringSliceFromAny(raw any) []string {
+	switch values := raw.(type) {
+	case []string:
+		result := make([]string, 0, len(values))
+		for _, value := range values {
+			if strings.TrimSpace(value) == "" {
+				continue
+			}
+
+			result = append(result, value)
+		}
+		return result
+	case []any:
+		result := make([]string, 0, len(values))
+		for _, value := range values {
+			text, ok := value.(string)
+			if !ok || strings.TrimSpace(text) == "" {
+				continue
+			}
+
+			result = append(result, text)
+		}
+		return result
+	default:
+		return nil
+	}
+}
+
+func jsonMapSlice(raw any) []models.JSONMap {
+	switch values := raw.(type) {
+	case []models.JSONMap:
+		result := make([]models.JSONMap, 0, len(values))
+		for _, value := range values {
+			result = append(result, value)
+		}
+		return result
+	case []map[string]any:
+		result := make([]models.JSONMap, 0, len(values))
+		for _, value := range values {
+			result = append(result, models.JSONMap(value))
+		}
+		return result
+	case []any:
+		result := make([]models.JSONMap, 0, len(values))
+		for _, value := range values {
+			item, ok := value.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			result = append(result, models.JSONMap(item))
+		}
+		return result
+	default:
+		return nil
+	}
+}
+
+func newEvidenceID() string {
+	return newPrefixedID("evidence")
+}
+
+func newDiagnosticObjectID() string {
+	return newPrefixedID("diag")
 }
 
 func (e *Engine) detectNoRetrievedChunks(payload models.TracePayload) []models.Warning {
@@ -602,11 +929,15 @@ func containsUncertaintyPhrase(answer string) bool {
 }
 
 func newWarningID() string {
+	return newPrefixedID("warning")
+}
+
+func newPrefixedID(prefix string) string {
 	buffer := make([]byte, 8)
 
 	if _, err := rand.Read(buffer); err != nil {
-		return fmt.Sprintf("warning_%d", time.Now().UnixNano())
+		return fmt.Sprintf("%s_%d", prefix, time.Now().UnixNano())
 	}
 
-	return "warning_" + hex.EncodeToString(buffer)
+	return prefix + "_" + hex.EncodeToString(buffer)
 }

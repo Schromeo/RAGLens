@@ -49,6 +49,39 @@ export type Span = {
   error: JsonObject | null;
 };
 
+export type DiagnosticSignal = {
+  signal_id: string;
+  label: string;
+  observed?: JsonValue;
+  expected?: JsonValue;
+  comparator?: string;
+  strength?: string;
+  attributes?: JsonObject;
+};
+
+export type EvidenceItem = {
+  evidence_id?: string | null;
+  type: string;
+  label: string;
+  span_id?: string | null;
+  chunk_id?: string | null;
+  source?: string | null;
+  snippet?: string | null;
+  locator?: JsonObject;
+  attributes?: JsonObject;
+  diagnostic_object_ids?: string[];
+};
+
+export type DiagnosticObject = {
+  diagnostic_object_id: string;
+  type: string;
+  label: string;
+  span_id?: string | null;
+  text?: string | null;
+  normalized?: JsonObject;
+  attributes?: JsonObject;
+};
+
 export type Warning = {
   warning_id: string;
   trace_id: string;
@@ -57,6 +90,17 @@ export type Warning = {
   severity: string;
   message: string;
   details: JsonObject;
+  schema_version?: string | null;
+  rule_id?: string | null;
+  rule_version?: string | null;
+  title?: string | null;
+  category?: string | null;
+  confidence?: number | null;
+  explanation?: string | null;
+  evidence?: EvidenceItem[] | null;
+  diagnostics?: DiagnosticObject[] | null;
+  signals?: DiagnosticSignal[] | null;
+  recommended_action?: string | null;
   created_at: string;
 };
 

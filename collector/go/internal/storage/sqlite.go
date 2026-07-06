@@ -77,7 +77,18 @@ CREATE TABLE IF NOT EXISTS warnings (
     type TEXT NOT NULL,
     severity TEXT NOT NULL,
     message TEXT NOT NULL,
+	schema_version TEXT,
+	rule_id TEXT,
+	rule_version TEXT,
+	title TEXT,
+	category TEXT,
+	confidence REAL,
+	explanation TEXT,
     details_json TEXT,
+	evidence_json TEXT,
+	diagnostics_json TEXT,
+	signals_json TEXT,
+	recommended_action TEXT,
     created_at TEXT NOT NULL,
     FOREIGN KEY(trace_id) REFERENCES traces(id),
     FOREIGN KEY(span_id) REFERENCES spans(id)
@@ -99,6 +110,70 @@ ON warnings(span_id);
 	_, err := s.db.ExecContext(ctx, schema)
 	if err != nil {
 		return fmt.Errorf("run sqlite migrations: %w", err)
+	}
+
+	if err := s.ensureWarningColumns(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Store) ensureWarningColumns(ctx context.Context) error {
+	rows, err := s.db.QueryContext(ctx, `PRAGMA table_info(warnings)`)
+	if err != nil {
+		return fmt.Errorf("inspect warnings table columns: %w", err)
+	}
+	defer rows.Close()
+
+	existing := make(map[string]bool)
+	for rows.Next() {
+		var (
+			cid        int
+			name       string
+			columnType string
+			notNull    int
+			defaultVal sql.NullString
+			pk         int
+		)
+
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultVal, &pk); err != nil {
+			return fmt.Errorf("scan warnings table info: %w", err)
+		}
+
+		existing[name] = true
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate warnings table info: %w", err)
+	}
+
+	columns := []struct {
+		name string
+		typ  string
+	}{
+		{name: "schema_version", typ: "TEXT"},
+		{name: "rule_id", typ: "TEXT"},
+		{name: "rule_version", typ: "TEXT"},
+		{name: "title", typ: "TEXT"},
+		{name: "category", typ: "TEXT"},
+		{name: "confidence", typ: "REAL"},
+		{name: "explanation", typ: "TEXT"},
+		{name: "evidence_json", typ: "TEXT"},
+		{name: "diagnostics_json", typ: "TEXT"},
+		{name: "signals_json", typ: "TEXT"},
+		{name: "recommended_action", typ: "TEXT"},
+	}
+
+	for _, column := range columns {
+		if existing[column.name] {
+			continue
+		}
+
+		query := fmt.Sprintf("ALTER TABLE warnings ADD COLUMN %s %s", column.name, column.typ)
+		if _, err := s.db.ExecContext(ctx, query); err != nil {
+			return fmt.Errorf("add warnings.%s column: %w", column.name, err)
+		}
 	}
 
 	return nil
@@ -261,9 +336,12 @@ func (s *Store) SaveWarnings(ctx context.Context, warnings []models.Warning) err
 		ctx,
 		`
 INSERT INTO warnings (
-    id, trace_id, span_id, type, severity, message, details_json, created_at
+	id, trace_id, span_id, type, severity, message,
+	schema_version, rule_id, rule_version, title, category, confidence, explanation,
+	details_json, evidence_json, diagnostics_json, signals_json, recommended_action,
+	created_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `,
 	)
 	if err != nil {
@@ -302,6 +380,21 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			return fmt.Errorf("marshal warning details: %w", err)
 		}
 
+		evidenceJSON, err := marshalJSONArray(warning.Evidence)
+		if err != nil {
+			return fmt.Errorf("marshal warning evidence: %w", err)
+		}
+
+		diagnosticsJSON, err := marshalJSONArray(warning.Diagnostics)
+		if err != nil {
+			return fmt.Errorf("marshal warning diagnostics: %w", err)
+		}
+
+		signalsJSON, err := marshalJSONArray(warning.Signals)
+		if err != nil {
+			return fmt.Errorf("marshal warning signals: %w", err)
+		}
+
 		_, err = stmt.ExecContext(
 			ctx,
 			warning.WarningID,
@@ -310,7 +403,18 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			warning.Type,
 			warning.Severity,
 			warning.Message,
+			nullableString(warning.SchemaVersion),
+			nullableString(warning.RuleID),
+			nullableString(warning.RuleVersion),
+			nullableString(warning.Title),
+			nullableString(warning.Category),
+			nullableFloat(warning.Confidence),
+			nullableString(warning.Explanation),
 			detailsJSON,
+			evidenceJSON,
+			diagnosticsJSON,
+			signalsJSON,
+			nullableString(warning.RecommendedAction),
 			warning.CreatedAt,
 		)
 		if err != nil {
@@ -569,7 +673,10 @@ func (s *Store) getWarnings(ctx context.Context, traceID string) ([]models.Warni
 		ctx,
 		`
 SELECT
-    id, trace_id, span_id, type, severity, message, details_json, created_at
+	id, trace_id, span_id, type, severity, message,
+	schema_version, rule_id, rule_version, title, category, confidence, explanation,
+	details_json, evidence_json, diagnostics_json, signals_json, recommended_action,
+	created_at
 FROM warnings
 WHERE trace_id = ?
 ORDER BY created_at ASC
@@ -587,14 +694,25 @@ ORDER BY created_at ASC
 
 	for rows.Next() {
 		var (
-			id             string
-			warningTraceID string
-			spanID         sql.NullString
-			warningType    string
-			severity       string
-			message        string
-			detailsJSON    sql.NullString
-			createdAt      string
+			id                string
+			warningTraceID    string
+			spanID            sql.NullString
+			warningType       string
+			severity          string
+			message           string
+			schemaVersion     sql.NullString
+			ruleID            sql.NullString
+			ruleVersion       sql.NullString
+			title             sql.NullString
+			category          sql.NullString
+			confidence        sql.NullFloat64
+			explanation       sql.NullString
+			detailsJSON       sql.NullString
+			evidenceJSON      sql.NullString
+			diagnosticsJSON   sql.NullString
+			signalsJSON       sql.NullString
+			recommendedAction sql.NullString
+			createdAt         string
 		)
 
 		if err := rows.Scan(
@@ -604,21 +722,43 @@ ORDER BY created_at ASC
 			&warningType,
 			&severity,
 			&message,
+			&schemaVersion,
+			&ruleID,
+			&ruleVersion,
+			&title,
+			&category,
+			&confidence,
+			&explanation,
 			&detailsJSON,
+			&evidenceJSON,
+			&diagnosticsJSON,
+			&signalsJSON,
+			&recommendedAction,
 			&createdAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan warning: %w", err)
 		}
 
 		warnings = append(warnings, models.Warning{
-			WarningID: id,
-			TraceID:   warningTraceID,
-			SpanID:    nullableStringFromSQL(spanID),
-			Type:      warningType,
-			Severity:  severity,
-			Message:   message,
-			Details:   parseJSONMap(detailsJSON.String),
-			CreatedAt: createdAt,
+			WarningID:         id,
+			TraceID:           warningTraceID,
+			SpanID:            nullableStringFromSQL(spanID),
+			Type:              warningType,
+			Severity:          severity,
+			Message:           message,
+			SchemaVersion:     nullableStringFromSQL(schemaVersion),
+			RuleID:            nullableStringFromSQL(ruleID),
+			RuleVersion:       nullableStringFromSQL(ruleVersion),
+			Title:             nullableStringFromSQL(title),
+			Category:          nullableStringFromSQL(category),
+			Confidence:        nullableFloatFromSQL(confidence),
+			Explanation:       nullableStringFromSQL(explanation),
+			Details:           parseJSONMap(detailsJSON.String),
+			Evidence:          parseJSONArray[models.EvidenceItem](evidenceJSON.String),
+			Diagnostics:       parseJSONArray[models.DiagnosticObject](diagnosticsJSON.String),
+			Signals:           parseJSONArray[models.DiagnosticSignal](signalsJSON.String),
+			RecommendedAction: nullableStringFromSQL(recommendedAction),
+			CreatedAt:         createdAt,
 		})
 	}
 
@@ -642,6 +782,19 @@ func marshalJSON(value any) (string, error) {
 	return string(data), nil
 }
 
+func marshalJSONArray[T any](value []T) (string, error) {
+	if len(value) == 0 {
+		return "[]", nil
+	}
+
+	data, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 func parseJSONMap(raw string) models.JSONMap {
 	if raw == "" {
 		return models.JSONMap{}
@@ -654,6 +807,23 @@ func parseJSONMap(raw string) models.JSONMap {
 
 	if result == nil {
 		return models.JSONMap{}
+	}
+
+	return result
+}
+
+func parseJSONArray[T any](raw string) []T {
+	if raw == "" {
+		return []T{}
+	}
+
+	var result []T
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		return []T{}
+	}
+
+	if result == nil {
+		return []T{}
 	}
 
 	return result
@@ -689,6 +859,14 @@ func nullableInt(value *int) any {
 	return *value
 }
 
+func nullableFloat(value *float64) any {
+	if value == nil {
+		return nil
+	}
+
+	return *value
+}
+
 func nullableStringFromSQL(value sql.NullString) *string {
 	if !value.Valid {
 		return nil
@@ -703,5 +881,14 @@ func nullableIntFromSQL(value sql.NullInt64) *int {
 	}
 
 	result := int(value.Int64)
+	return &result
+}
+
+func nullableFloatFromSQL(value sql.NullFloat64) *float64 {
+	if !value.Valid {
+		return nil
+	}
+
+	result := value.Float64
 	return &result
 }

@@ -35,15 +35,59 @@ type Span struct {
 	Error        JSONMap `json:"error"`
 }
 
+type DiagnosticSignal struct {
+	SignalID   string  `json:"signal_id"`
+	Label      string  `json:"label"`
+	Observed   any     `json:"observed,omitempty"`
+	Expected   any     `json:"expected,omitempty"`
+	Comparator string  `json:"comparator,omitempty"`
+	Strength   string  `json:"strength,omitempty"`
+	Attributes JSONMap `json:"attributes,omitempty"`
+}
+
+type EvidenceItem struct {
+	EvidenceID          string   `json:"evidence_id"`
+	Type                string   `json:"type"`
+	Label               string   `json:"label"`
+	SpanID              *string  `json:"span_id,omitempty"`
+	ChunkID             *string  `json:"chunk_id,omitempty"`
+	Source              *string  `json:"source,omitempty"`
+	Snippet             string   `json:"snippet,omitempty"`
+	Locator             JSONMap  `json:"locator,omitempty"`
+	Attributes          JSONMap  `json:"attributes,omitempty"`
+	DiagnosticObjectIDs []string `json:"diagnostic_object_ids,omitempty"`
+}
+
+type DiagnosticObject struct {
+	DiagnosticObjectID string  `json:"diagnostic_object_id"`
+	Type               string  `json:"type"`
+	Label              string  `json:"label"`
+	SpanID             *string `json:"span_id,omitempty"`
+	Text               string  `json:"text,omitempty"`
+	Normalized         JSONMap `json:"normalized,omitempty"`
+	Attributes         JSONMap `json:"attributes,omitempty"`
+}
+
 type Warning struct {
-	WarningID string  `json:"warning_id"`
-	TraceID   string  `json:"trace_id"`
-	SpanID    *string `json:"span_id"`
-	Type      string  `json:"type"`
-	Severity  string  `json:"severity"`
-	Message   string  `json:"message"`
-	Details   JSONMap `json:"details"`
-	CreatedAt string  `json:"created_at"`
+	WarningID         string             `json:"warning_id"`
+	TraceID           string             `json:"trace_id"`
+	SpanID            *string            `json:"span_id"`
+	Type              string             `json:"type"`
+	Severity          string             `json:"severity"`
+	Message           string             `json:"message"`
+	Details           JSONMap            `json:"details"`
+	SchemaVersion     *string            `json:"schema_version,omitempty"`
+	RuleID            *string            `json:"rule_id,omitempty"`
+	RuleVersion       *string            `json:"rule_version,omitempty"`
+	Title             *string            `json:"title,omitempty"`
+	Category          *string            `json:"category,omitempty"`
+	Confidence        *float64           `json:"confidence,omitempty"`
+	Explanation       *string            `json:"explanation,omitempty"`
+	Evidence          []EvidenceItem     `json:"evidence,omitempty"`
+	Diagnostics       []DiagnosticObject `json:"diagnostics,omitempty"`
+	Signals           []DiagnosticSignal `json:"signals,omitempty"`
+	RecommendedAction *string            `json:"recommended_action,omitempty"`
+	CreatedAt         string             `json:"created_at"`
 }
 
 type TraceListItem struct {
