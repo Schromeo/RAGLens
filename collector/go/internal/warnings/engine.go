@@ -19,6 +19,7 @@ const (
 	TypeLowRetrievalScore = "low_retrieval_score"
 	TypeDuplicateChunks   = "duplicate_chunks"
 	TypeAnswerNotGrounded = "answer_not_grounded"
+	TypeNumericMismatch   = "numeric_mismatch"
 
 	SeverityInfo    = "info"
 	SeverityWarning = "warning"
@@ -40,6 +41,7 @@ func (e *Engine) Generate(payload models.TracePayload) []models.Warning {
 	result = append(result, e.detectLowRetrievalScore(payload)...)
 	result = append(result, e.detectDuplicateChunks(payload)...)
 	result = append(result, e.detectConflictingChunks(payload)...)
+	result = append(result, e.detectNumericMismatch(payload)...)
 	result = append(result, e.detectAnswerNotGrounded(payload)...)
 
 	return enrichWarnings(result)
@@ -111,6 +113,8 @@ func defaultWarningTitle(warningType string) string {
 		return "Conflicting retrieved chunks"
 	case TypeAnswerNotGrounded:
 		return "Answer may not be grounded"
+	case TypeNumericMismatch:
+		return "Numeric mismatch between answer and retrieved context"
 	default:
 		return strings.ReplaceAll(warningType, "_", " ")
 	}
@@ -122,7 +126,7 @@ func defaultWarningCategory(warningType string) string {
 		return "retrieval"
 	case TypeConflictingChunks:
 		return "conflict"
-	case TypeAnswerNotGrounded:
+	case TypeAnswerNotGrounded, TypeNumericMismatch:
 		return "grounding"
 	default:
 		return "diagnostic"
@@ -149,6 +153,8 @@ func defaultRecommendedAction(warningType string) string {
 		return "Inspect source freshness and ranking to determine which retrieved evidence should be trusted."
 	case TypeAnswerNotGrounded:
 		return "Compare the final answer against the retrieved context and check whether the model used unsupported claims."
+	case TypeNumericMismatch:
+		return "Compare the final answer against the retrieved chunks and verify whether the model used an outdated or unsupported numeric value."
 	default:
 		return "Inspect the trace details to understand why this diagnostic was raised."
 	}
@@ -303,6 +309,10 @@ func defaultWarningDiagnostics(warning models.Warning) []models.DiagnosticObject
 }
 
 func stringPtr(value string) *string {
+	return &value
+}
+
+func float64Ptr(value float64) *float64 {
 	return &value
 }
 
@@ -595,6 +605,486 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
 		},
 	}
+}
+
+type numericExpression struct {
+	Raw          string
+	Value        string
+	Unit         string
+	Normalized   string
+	Snippet      string
+	ContextTerms []string
+}
+
+type numericMismatchCandidate struct {
+	AnswerExpression numericExpression
+	ChunkExpression  numericExpression
+	Chunk            retrievedChunk
+	ChunkRank        int
+	SharedTerms      []string
+}
+
+var numericExpressionRegex = regexp.MustCompile(`(?i)\b(\d{1,4})(?:\s*-\s*(\d{1,4}))?\s*(business\s+days?|days?|months?|years?|hours?|percent|%)\b`)
+
+func (e *Engine) detectNumericMismatch(payload models.TracePayload) []models.Warning {
+	answer, llmSpanID := extractFinalAnswer(payload)
+	answer = strings.TrimSpace(answer)
+
+	if answer == "" {
+		return nil
+	}
+
+	if containsUncertaintyPhrase(answer) {
+		return nil
+	}
+
+	answerExpressions := extractNumericExpressions(answer)
+	if len(answerExpressions) == 0 {
+		return nil
+	}
+
+	chunks := extractRetrievedChunks(payload.Spans)
+	if len(chunks) == 0 {
+		return nil
+	}
+
+	var best *numericMismatchCandidate
+
+	for _, answerExpression := range answerExpressions {
+		for chunkIndex, chunk := range chunks {
+			chunkText := strings.TrimSpace(chunk.Text)
+			if chunkText == "" {
+				continue
+			}
+
+			chunkExpressions := extractNumericExpressions(chunkText)
+			for _, chunkExpression := range chunkExpressions {
+				if answerExpression.Unit != chunkExpression.Unit {
+					continue
+				}
+
+				if answerExpression.Value == chunkExpression.Value {
+					continue
+				}
+
+				sharedTerms := sharedContextTerms(
+					answerExpression.ContextTerms,
+					chunkExpression.ContextTerms,
+				)
+
+				// Keep this first version intentionally conservative:
+				// same unit + different value + at least one shared local context term.
+				if len(sharedTerms) == 0 {
+					continue
+				}
+
+				candidate := numericMismatchCandidate{
+					AnswerExpression: answerExpression,
+					ChunkExpression:  chunkExpression,
+					Chunk:            chunk,
+					ChunkRank:        chunkIndex + 1,
+					SharedTerms:      sharedTerms,
+				}
+
+				if best == nil || isBetterNumericMismatchCandidate(candidate, *best) {
+					best = &candidate
+				}
+			}
+		}
+	}
+
+	if best == nil {
+		return nil
+	}
+
+	answerValue := best.AnswerExpression.Normalized
+	chunkValue := best.ChunkExpression.Normalized
+	chunkSpanID := best.Chunk.SpanID
+	chunkID := best.Chunk.ChunkID
+
+	answerDiagnosticID := newDiagnosticObjectID()
+	chunkDiagnosticID := newDiagnosticObjectID()
+
+	evidence := []models.EvidenceItem{
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "answer_snippet",
+			Label:      "Answer numeric claim",
+			SpanID:     llmSpanID,
+			Snippet:    best.AnswerExpression.Snippet,
+			Attributes: models.JSONMap{
+				"value":            best.AnswerExpression.Value,
+				"unit":             best.AnswerExpression.Unit,
+				"normalized_value": best.AnswerExpression.Normalized,
+			},
+			DiagnosticObjectIDs: []string{answerDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "chunk_snippet",
+			Label:      "Retrieved chunk numeric value",
+			SpanID:     &chunkSpanID,
+			ChunkID:    &chunkID,
+			Source:     chunkSource(best.Chunk),
+			Snippet:    best.ChunkExpression.Snippet,
+			Attributes: models.JSONMap{
+				"value":            best.ChunkExpression.Value,
+				"unit":             best.ChunkExpression.Unit,
+				"normalized_value": best.ChunkExpression.Normalized,
+				"rank":             best.ChunkRank,
+				"score":            nullableScore(best.Chunk.Score),
+			},
+			DiagnosticObjectIDs: []string{chunkDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "numeric_value",
+			Label:      "Compared numeric values",
+			Snippet: fmt.Sprintf(
+				"Answer value %s differs from retrieved value %s.",
+				answerValue,
+				chunkValue,
+			),
+			Attributes: models.JSONMap{
+				"answer_value":    answerValue,
+				"retrieved_value": chunkValue,
+				"shared_terms":    best.SharedTerms,
+			},
+		},
+	}
+
+	diagnostics := []models.DiagnosticObject{
+		{
+			DiagnosticObjectID: answerDiagnosticID,
+			Type:               "numeric_claim",
+			Label:              "Numeric value in final answer",
+			SpanID:             llmSpanID,
+			Text:               best.AnswerExpression.Snippet,
+			Normalized: models.JSONMap{
+				"value": best.AnswerExpression.Value,
+				"unit":  best.AnswerExpression.Unit,
+			},
+			Attributes: models.JSONMap{
+				"source": "answer",
+			},
+		},
+		{
+			DiagnosticObjectID: chunkDiagnosticID,
+			Type:               "chunk_fact",
+			Label:              "Numeric value in retrieved chunk",
+			SpanID:             &chunkSpanID,
+			Text:               best.ChunkExpression.Snippet,
+			Normalized: models.JSONMap{
+				"value":    best.ChunkExpression.Value,
+				"unit":     best.ChunkExpression.Unit,
+				"chunk_id": chunkID,
+			},
+			Attributes: models.JSONMap{
+				"source": chunkSourceValue(best.Chunk),
+				"rank":   best.ChunkRank,
+				"score":  nullableScore(best.Chunk.Score),
+			},
+		},
+	}
+
+	signals := []models.DiagnosticSignal{
+		{
+			SignalID:   "same_unit_different_value",
+			Label:      "Same unit but different numeric value",
+			Observed:   answerValue,
+			Expected:   chunkValue,
+			Comparator: "not_equal",
+			Strength:   "strong",
+		},
+		{
+			SignalID:   "local_context_overlap",
+			Label:      "Answer and chunk numeric values appear in similar local context",
+			Observed:   strings.Join(best.SharedTerms, ", "),
+			Expected:   "at least one shared context term",
+			Comparator: "overlap_greater_than_zero",
+			Strength:   "moderate",
+			Attributes: models.JSONMap{
+				"shared_terms": best.SharedTerms,
+			},
+		},
+	}
+
+	return []models.Warning{
+		{
+			WarningID:     newWarningID(),
+			TraceID:       payload.Trace.TraceID,
+			SpanID:        llmSpanID,
+			Type:          TypeNumericMismatch,
+			Severity:      "high",
+			Message:       fmt.Sprintf("Answer says %s, but retrieved context says %s.", answerValue, chunkValue),
+			SchemaVersion: stringPtr("2"),
+			RuleID:        stringPtr(TypeNumericMismatch),
+			RuleVersion:   stringPtr("1"),
+			Title:         stringPtr("Answer numeric value conflicts with retrieved context"),
+			Category:      stringPtr("grounding"),
+			Confidence:    float64Ptr(0.9),
+			Explanation: stringPtr(
+				"RAGLens found a numeric value in the final answer that differs from a retrieved chunk with overlapping local context.",
+			),
+			Details: models.JSONMap{
+				"rule":            TypeNumericMismatch,
+				"answer_value":    answerValue,
+				"retrieved_value": chunkValue,
+				"shared_terms":    best.SharedTerms,
+				"chunk_id":        chunkID,
+				"chunk_rank":      best.ChunkRank,
+				"reason":          "answer numeric value differs from retrieved numeric value in similar local context",
+			},
+			Evidence:          evidence,
+			Diagnostics:       diagnostics,
+			Signals:           signals,
+			RecommendedAction: stringPtr("Inspect whether the answer copied an outdated value, ignored stronger retrieved evidence, or mixed conflicting policy chunks."),
+			CreatedAt:         time.Now().UTC().Format(time.RFC3339Nano),
+		},
+	}
+}
+
+func isBetterNumericMismatchCandidate(candidate numericMismatchCandidate, current numericMismatchCandidate) bool {
+	if len(candidate.SharedTerms) != len(current.SharedTerms) {
+		return len(candidate.SharedTerms) > len(current.SharedTerms)
+	}
+
+	candidateScore := -1.0
+	if candidate.Chunk.Score != nil {
+		candidateScore = *candidate.Chunk.Score
+	}
+
+	currentScore := -1.0
+	if current.Chunk.Score != nil {
+		currentScore = *current.Chunk.Score
+	}
+
+	if candidateScore != currentScore {
+		return candidateScore > currentScore
+	}
+
+	return candidate.ChunkRank < current.ChunkRank
+}
+
+func extractNumericExpressions(text string) []numericExpression {
+	matches := numericExpressionRegex.FindAllStringSubmatch(text, -1)
+
+	result := make([]numericExpression, 0, len(matches))
+	seen := map[string]bool{}
+
+	for _, match := range matches {
+		if len(match) < 4 {
+			continue
+		}
+
+		raw := strings.TrimSpace(match[0])
+		if raw == "" {
+			continue
+		}
+
+		value := strings.TrimSpace(match[1])
+		if match[2] != "" {
+			value = value + "-" + strings.TrimSpace(match[2])
+		}
+
+		unit := normalizeNumericUnit(match[3])
+		if unit == "" {
+			continue
+		}
+
+		normalized := value + " " + unit
+		snippet := sentenceContaining(text, raw)
+		key := normalized + "|" + snippet
+		if seen[key] {
+			continue
+		}
+
+		seen[key] = true
+
+		result = append(result, numericExpression{
+			Raw:          raw,
+			Value:        value,
+			Unit:         unit,
+			Normalized:   normalized,
+			Snippet:      snippet,
+			ContextTerms: importantContextTerms(snippet),
+		})
+	}
+
+	return result
+}
+
+func normalizeNumericUnit(raw string) string {
+	unit := strings.ToLower(strings.TrimSpace(raw))
+	unit = strings.Join(strings.Fields(unit), " ")
+
+	switch unit {
+	case "day", "days":
+		return "days"
+	case "business day", "business days":
+		return "business days"
+	case "month", "months":
+		return "months"
+	case "year", "years":
+		return "years"
+	case "hour", "hours":
+		return "hours"
+	case "percent", "%":
+		return "percent"
+	default:
+		return ""
+	}
+}
+
+func sentenceContaining(text string, needle string) string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return ""
+	}
+
+	needle = strings.TrimSpace(needle)
+	if needle == "" {
+		return text
+	}
+
+	index := strings.Index(strings.ToLower(text), strings.ToLower(needle))
+	if index < 0 {
+		return text
+	}
+
+	start := 0
+	for i := index - 1; i >= 0; i-- {
+		if text[i] == '.' || text[i] == '!' || text[i] == '?' || text[i] == '\n' {
+			start = i + 1
+			break
+		}
+	}
+
+	end := len(text)
+	for i := index + len(needle); i < len(text); i++ {
+		if text[i] == '.' || text[i] == '!' || text[i] == '?' || text[i] == '\n' {
+			end = i + 1
+			break
+		}
+	}
+
+	return strings.TrimSpace(text[start:end])
+}
+
+var nonWordRegex = regexp.MustCompile(`[^a-z0-9]+`)
+
+func importantContextTerms(text string) []string {
+	normalized := strings.ToLower(text)
+	normalized = nonWordRegex.ReplaceAllString(normalized, " ")
+
+	stopwords := map[string]bool{
+		"a": true, "an": true, "the": true, "and": true, "or": true, "but": true,
+		"is": true, "are": true, "was": true, "were": true, "be": true, "been": true,
+		"to": true, "of": true, "in": true, "on": true, "for": true, "with": true,
+		"within": true, "from": true, "by": true, "at": true, "as": true,
+		"can": true, "may": true, "must": true, "should": true, "will": true,
+		"customers": true, "customer": true, "users": true, "user": true,
+		"days": true, "day": true, "business": true, "months": true, "month": true,
+		"years": true, "year": true, "hours": true, "hour": true,
+	}
+
+	seen := map[string]bool{}
+	result := make([]string, 0)
+
+	for _, term := range strings.Fields(normalized) {
+		if len(term) < 3 {
+			continue
+		}
+
+		if stopwords[term] {
+			continue
+		}
+
+		if _, err := fmt.Sscanf(term, "%d", new(int)); err == nil {
+			continue
+		}
+
+		if seen[term] {
+			continue
+		}
+
+		seen[term] = true
+		result = append(result, term)
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
+func sharedContextTerms(left []string, right []string) []string {
+	rightSet := map[string]bool{}
+	for _, term := range right {
+		rightSet[term] = true
+	}
+
+	seen := map[string]bool{}
+	result := make([]string, 0)
+
+	for _, term := range left {
+		if !rightSet[term] || seen[term] {
+			continue
+		}
+
+		seen[term] = true
+		result = append(result, term)
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
+func chunkSource(chunk retrievedChunk) *string {
+	value := chunkSourceValue(chunk)
+	if value == "" {
+		return nil
+	}
+
+	return &value
+}
+
+func chunkSourceValue(chunk retrievedChunk) string {
+	keys := []string{
+		"source",
+		"file",
+		"filename",
+		"path",
+		"document",
+		"doc_id",
+	}
+
+	for _, key := range keys {
+		raw, ok := chunk.Metadata[key]
+		if !ok || raw == nil {
+			continue
+		}
+
+		value, ok := raw.(string)
+		if !ok {
+			continue
+		}
+
+		value = strings.TrimSpace(value)
+		if value != "" {
+			return value
+		}
+	}
+
+	return ""
+}
+
+func nullableScore(score *float64) any {
+	if score == nil {
+		return nil
+	}
+
+	return *score
 }
 
 func (e *Engine) detectAnswerNotGrounded(payload models.TracePayload) []models.Warning {

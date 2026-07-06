@@ -162,6 +162,8 @@ export default function TraceDetailPage({ traceId }: Props) {
 
                       <p>{warning.explanation || warning.message}</p>
 
+                      {renderComparedValuesBlock(warning)}
+
                       {renderEvidencePreview(warning.evidence ?? [])}
 
                       <div className="warning-help">
@@ -327,6 +329,98 @@ function getWarningTitle(warning: Warning): string {
   return warning.title || formatWarningType(warning.type);
 }
 
+function renderComparedValuesBlock(warning: Warning) {
+  const comparedValues = getComparedValues(warning);
+
+  if (!comparedValues) {
+    return null;
+  }
+
+  return (
+    <div className="warning-value-diff">
+      <div className="warning-section-label">Compared values</div>
+
+      <div className="warning-value-diff-row">
+        <span>Answer value</span>
+        <strong>{comparedValues.answerValue}</strong>
+      </div>
+
+      <div className="warning-value-diff-row">
+        <span>Retrieved value</span>
+        <strong>{comparedValues.retrievedValue}</strong>
+      </div>
+    </div>
+  );
+}
+
+function getComparedValues(
+  warning: Warning,
+): { answerValue: string; retrievedValue: string } | null {
+  if (warning.type !== "numeric_mismatch") {
+    return null;
+  }
+
+  const evidenceValue = getComparedValuesFromEvidence(warning.evidence ?? []);
+  if (evidenceValue) {
+    return evidenceValue;
+  }
+
+  const answerValue = getRecordString(warning.details, "answer_value");
+  const retrievedValue = getRecordString(warning.details, "retrieved_value");
+
+  if (!answerValue || !retrievedValue) {
+    return null;
+  }
+
+  return {
+    answerValue,
+    retrievedValue,
+  };
+}
+
+function getComparedValuesFromEvidence(
+  evidence: EvidenceItem[],
+): { answerValue: string; retrievedValue: string } | null {
+  for (const item of evidence) {
+    if (item.type !== "numeric_value") {
+      continue;
+    }
+
+    const answerValue = getRecordString(item.attributes, "answer_value");
+    const retrievedValue = getRecordString(item.attributes, "retrieved_value");
+
+    if (answerValue && retrievedValue) {
+      return {
+        answerValue,
+        retrievedValue,
+      };
+    }
+  }
+
+  return null;
+}
+
+function getRecordString(
+  value: Record<string, unknown> | null | undefined,
+  key: string,
+): string {
+  if (!value) {
+    return "";
+  }
+
+  const raw = value[key];
+
+  if (typeof raw === "string") {
+    return raw;
+  }
+
+  if (typeof raw === "number") {
+    return String(raw);
+  }
+
+  return "";
+}
+
 function renderEvidencePreview(evidence: EvidenceItem[]) {
   if (evidence.length === 0) {
     return null;
@@ -364,6 +458,9 @@ function getWarningHelpText(type: string): string {
 
     case "conflicting_chunks":
       return "The retrieved chunks appear to contain conflicting information.";
+
+    case "numeric_mismatch":
+      return "The final answer contains a numeric value that differs from retrieved context with similar local wording.";
 
     case "answer_not_grounded":
       return "The answer appears to include a claim that is not supported by the retrieved context.";

@@ -444,10 +444,16 @@ button {
   font-weight: 800;
 }
 
+/*
+  v0.3 diagnostic layout:
+  - Keep warnings readable on wide screens.
+  - Keep the span detail column from collapsing into unreadable slivers.
+  - Switch to single column earlier on medium screens.
+*/
 .detail-grid {
   margin-top: 16px;
   display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(380px, 34vw) minmax(520px, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -662,7 +668,7 @@ button {
 
 .warning-card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
@@ -674,6 +680,8 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
 }
 
 .warning-severity {
@@ -704,6 +712,38 @@ button {
   text-transform: uppercase;
 }
 
+.warning-value-diff {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #fdba74;
+  border-radius: 12px;
+  background: #fff7ed;
+}
+
+.warning-value-diff-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  color: #7c2d12;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.warning-value-diff-row span {
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.warning-value-diff-row strong {
+  max-width: 55%;
+  color: #7c2d12;
+  font-weight: 900;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .warning-evidence-preview {
   margin: 10px 0;
   padding: 10px;
@@ -724,7 +764,12 @@ button {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 1500px) {
+/*
+  Medium screens:
+  Once the page can no longer comfortably fit both diagnostic cards
+  and span details, switch to a single-column detail layout.
+*/
+@media (max-width: 1300px) {
   .layout {
     grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
   }
@@ -743,33 +788,15 @@ button {
 
   .timeline-panel {
     position: static;
-    display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr);
-    gap: 16px;
-    align-items: start;
+    display: block;
   }
 
   .timeline-panel h3 {
     margin-top: 0;
   }
 
-  .timeline-panel h3:nth-of-type(1) {
-    grid-column: 1;
-  }
-
-  .timeline-panel .span-timeline {
-    grid-column: 1;
-  }
-
-  .timeline-panel h3:nth-of-type(2) {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .timeline-panel .warning-list,
-  .timeline-panel .warning-card,
-  .timeline-panel .empty-card.compact {
-    grid-column: 2;
+  .timeline-panel h3:not(:first-child) {
+    margin-top: 24px;
   }
 
   .span-detail-panel {
@@ -777,6 +804,10 @@ button {
   }
 }
 
+/*
+  Tablet / narrow desktop:
+  Collapse the trace sidebar and detail area into one column.
+*/
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: 1fr;
@@ -798,6 +829,10 @@ button {
   }
 
   .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid {
     grid-template-columns: 1fr;
   }
 
@@ -877,5 +912,15 @@ button {
     align-items: flex-start;
     flex-direction: column;
   }
-}
 
+  .warning-value-diff-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .warning-value-diff-row strong {
+    max-width: 100%;
+    text-align: left;
+  }
+}
