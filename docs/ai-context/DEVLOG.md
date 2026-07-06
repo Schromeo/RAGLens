@@ -23,6 +23,18 @@
 - Explicitly out of scope: LangChain, LlamaIndex, PyPI, Docker, CLI, agent spans, tool spans, memory spans, cloud, auth, and LLM-as-judge.
 - The document is a product and schema design spec only. No implementation work was started.
 
+## 2026-07-03 (Future Agent Harness Observability Direction Documented)
+
+### Completed
+
+- Added documentation-only positioning updates for future agent harness observability.
+- Clarified that future direction may include:
+  - running traces for multi-step harness executions
+  - partial span ingestion
+  - future `agent` / `tool` / `retry` span types
+  - diagnostics for agent loops, oscillation, retry storms, and no-progress execution
+- Explicitly marked all of the above as not implemented in current RAGLens.
+
 ## 2026-07-02 (v0.2 Developer Integration / Local SDK Onboarding Completed)
 
 ### Completed

@@ -245,3 +245,24 @@ Not part of this milestone:
 * hosted collector
 
 These remain intentionally outside the v0.3 local-first deterministic-first path.
+
+---
+
+## Future — Agent Harness Observability (TraceForge Direction)
+
+**Status:** Future
+
+Potential future direction after current milestones:
+
+* running traces for multi-step agent/harness executions
+* partial span ingestion for long-running or interrupted runs
+* future span types such as `agent`, `tool`, and `retry`
+* diagnostics for agent loops
+* diagnostics for oscillation between states/actions
+* diagnostics for retry storms
+* diagnostics for no-progress execution
+
+Important scope note:
+
+* none of the above is implemented in current RAGLens
+* this direction is not part of current v0.3 scope
