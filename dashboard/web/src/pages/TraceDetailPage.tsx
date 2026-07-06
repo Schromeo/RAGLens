@@ -166,9 +166,12 @@ export default function TraceDetailPage({ traceId }: Props) {
 
                       {renderEvidencePreview(warning.evidence ?? [])}
 
-                      <div className="warning-help">
-                        {warning.recommended_action || getWarningHelpText(warning.type)}
+                      <div className="warning-recommendation">
+                        <div className="warning-section-label">Recommended action</div>
+                        <div className="warning-help">
+                          {warning.recommended_action || getWarningHelpText(warning.type)}
                       </div>
+</div>
                     </>
                   ) : (
                     <>

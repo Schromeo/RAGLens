@@ -801,58 +801,302 @@ func (e *Engine) detectDuplicateChunks(payload models.TracePayload) []models.War
 	}
 }
 
+type chunkNumericFact struct {
+	Expression numericExpression
+	Chunk      retrievedChunk
+	ChunkRank  int
+}
+
+type chunkConflictCandidate struct {
+	Left        chunkNumericFact
+	Right       chunkNumericFact
+	SharedTerms []string
+}
+
 func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.Warning {
 	chunks := extractRetrievedChunks(payload.Spans)
 	if len(chunks) < 2 {
 		return nil
 	}
 
-	// refund window value -> source chunk ids
-	refundWindows := map[string][]string{}
+	facts := make([]chunkNumericFact, 0)
 
-	for _, chunk := range chunks {
-		text := strings.TrimSpace(chunk.Text)
-		if text == "" {
+	for chunkIndex, chunk := range chunks {
+		chunkText := strings.TrimSpace(chunk.Text)
+		if chunkText == "" {
 			continue
 		}
 
-		days := extractRefundWindowDays(text)
-		for _, day := range days {
-			refundWindows[day] = append(refundWindows[day], chunk.ChunkID)
+		expressions := extractNumericExpressions(chunkText)
+		for _, expression := range expressions {
+			facts = append(facts, chunkNumericFact{
+				Expression: expression,
+				Chunk:      chunk,
+				ChunkRank:  chunkIndex + 1,
+			})
 		}
 	}
 
-	if len(refundWindows) < 2 {
+	if len(facts) < 2 {
 		return nil
 	}
 
-	values := make([]string, 0, len(refundWindows))
-	for value := range refundWindows {
-		values = append(values, value)
+	var best *chunkConflictCandidate
+
+	for i := 0; i < len(facts); i++ {
+		for j := i + 1; j < len(facts); j++ {
+			left := facts[i]
+			right := facts[j]
+
+			if left.Chunk.ChunkID == right.Chunk.ChunkID {
+				continue
+			}
+
+			if left.Expression.Unit != right.Expression.Unit {
+				continue
+			}
+
+			if left.Expression.Value == right.Expression.Value {
+				continue
+			}
+
+			sharedTerms := sharedContextTerms(left.Expression.ContextTerms, right.Expression.ContextTerms)
+			if len(sharedTerms) == 0 {
+				continue
+			}
+
+			candidate := chunkConflictCandidate{
+				Left:        left,
+				Right:       right,
+				SharedTerms: sharedTerms,
+			}
+
+			if best == nil || isBetterChunkConflictCandidate(candidate, *best) {
+				best = &candidate
+			}
+		}
 	}
-	sort.Strings(values)
+
+	if best == nil {
+		return nil
+	}
+
+	leftValue := best.Left.Expression.Normalized
+	rightValue := best.Right.Expression.Normalized
+	leftChunkID := best.Left.Chunk.ChunkID
+	rightChunkID := best.Right.Chunk.ChunkID
+	leftSpanID := best.Left.Chunk.SpanID
+	rightSpanID := best.Right.Chunk.SpanID
+
+	leftDiagnosticID := newDiagnosticObjectID()
+	rightDiagnosticID := newDiagnosticObjectID()
+	conflictDiagnosticID := newDiagnosticObjectID()
+
+	evidence := []models.EvidenceItem{
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "chunk_snippet",
+			Label:      "First conflicting retrieved chunk",
+			SpanID:     &leftSpanID,
+			ChunkID:    &leftChunkID,
+			Source:     chunkSource(best.Left.Chunk),
+			Snippet:    best.Left.Expression.Snippet,
+			Attributes: models.JSONMap{
+				"value":            best.Left.Expression.Value,
+				"unit":             best.Left.Expression.Unit,
+				"normalized_value": best.Left.Expression.Normalized,
+				"rank":             best.Left.ChunkRank,
+				"score":            nullableScore(best.Left.Chunk.Score),
+			},
+			DiagnosticObjectIDs: []string{leftDiagnosticID, conflictDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "chunk_snippet",
+			Label:      "Second conflicting retrieved chunk",
+			SpanID:     &rightSpanID,
+			ChunkID:    &rightChunkID,
+			Source:     chunkSource(best.Right.Chunk),
+			Snippet:    best.Right.Expression.Snippet,
+			Attributes: models.JSONMap{
+				"value":            best.Right.Expression.Value,
+				"unit":             best.Right.Expression.Unit,
+				"normalized_value": best.Right.Expression.Normalized,
+				"rank":             best.Right.ChunkRank,
+				"score":            nullableScore(best.Right.Chunk.Score),
+			},
+			DiagnosticObjectIDs: []string{rightDiagnosticID, conflictDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "conflict_pair",
+			Label:      "Conflicting numeric values",
+			Snippet: fmt.Sprintf(
+				"Retrieved chunks disagree: %s vs %s.",
+				leftValue,
+				rightValue,
+			),
+			Attributes: models.JSONMap{
+				"left_value":     leftValue,
+				"right_value":    rightValue,
+				"unit":           best.Left.Expression.Unit,
+				"left_chunk_id":  leftChunkID,
+				"right_chunk_id": rightChunkID,
+				"shared_terms":   best.SharedTerms,
+			},
+			DiagnosticObjectIDs: []string{conflictDiagnosticID},
+		},
+	}
+
+	diagnostics := []models.DiagnosticObject{
+		{
+			DiagnosticObjectID: leftDiagnosticID,
+			Type:               "chunk_fact",
+			Label:              "First retrieved numeric fact",
+			SpanID:             &leftSpanID,
+			Text:               best.Left.Expression.Snippet,
+			Normalized: models.JSONMap{
+				"value":    best.Left.Expression.Value,
+				"unit":     best.Left.Expression.Unit,
+				"chunk_id": leftChunkID,
+			},
+			Attributes: models.JSONMap{
+				"source": chunkSourceValue(best.Left.Chunk),
+				"rank":   best.Left.ChunkRank,
+				"score":  nullableScore(best.Left.Chunk.Score),
+			},
+		},
+		{
+			DiagnosticObjectID: rightDiagnosticID,
+			Type:               "chunk_fact",
+			Label:              "Second retrieved numeric fact",
+			SpanID:             &rightSpanID,
+			Text:               best.Right.Expression.Snippet,
+			Normalized: models.JSONMap{
+				"value":    best.Right.Expression.Value,
+				"unit":     best.Right.Expression.Unit,
+				"chunk_id": rightChunkID,
+			},
+			Attributes: models.JSONMap{
+				"source": chunkSourceValue(best.Right.Chunk),
+				"rank":   best.Right.ChunkRank,
+				"score":  nullableScore(best.Right.Chunk.Score),
+			},
+		},
+		{
+			DiagnosticObjectID: conflictDiagnosticID,
+			Type:               "conflict_group",
+			Label:              "Conflicting retrieved numeric values",
+			Normalized: models.JSONMap{
+				"values": []string{leftValue, rightValue},
+				"unit":   best.Left.Expression.Unit,
+			},
+			Attributes: models.JSONMap{
+				"left_chunk_id":  leftChunkID,
+				"right_chunk_id": rightChunkID,
+				"shared_terms":   best.SharedTerms,
+			},
+		},
+	}
+
+	signals := []models.DiagnosticSignal{
+		{
+			SignalID:   "same_unit_different_retrieved_values",
+			Label:      "Retrieved chunks contain different numeric values with the same unit",
+			Observed:   []string{leftValue, rightValue},
+			Expected:   "one consistent retrieved value",
+			Comparator: "multiple_distinct_values",
+			Strength:   "strong",
+		},
+		{
+			SignalID:   "local_context_overlap_between_conflicting_chunks",
+			Label:      "Conflicting values appear in similar local context",
+			Observed:   strings.Join(best.SharedTerms, ", "),
+			Expected:   "at least one shared context term",
+			Comparator: "overlap_greater_than_zero",
+			Strength:   "moderate",
+			Attributes: models.JSONMap{
+				"shared_terms": best.SharedTerms,
+			},
+		},
+	}
 
 	message := fmt.Sprintf(
-		"Retrieved chunks contain conflicting refund windows: %s days.",
-		strings.Join(values, " vs "),
+		"Retrieved chunks contain conflicting numeric values: %s vs %s.",
+		leftValue,
+		rightValue,
 	)
 
 	return []models.Warning{
 		{
-			WarningID: newWarningID(),
-			TraceID:   payload.Trace.TraceID,
-			SpanID:    nil,
-			Type:      TypeConflictingChunks,
-			Severity:  SeverityWarning,
-			Message:   message,
+			WarningID:     newWarningID(),
+			TraceID:       payload.Trace.TraceID,
+			SpanID:        nil,
+			Type:          TypeConflictingChunks,
+			Severity:      SeverityWarning,
+			Message:       message,
+			SchemaVersion: stringPtr("2"),
+			RuleID:        stringPtr(TypeConflictingChunks),
+			RuleVersion:   stringPtr("2"),
+			Title:         stringPtr("Retrieved chunks contain conflicting values"),
+			Category:      stringPtr("conflict"),
+			Confidence:    float64Ptr(0.88),
+			Explanation: stringPtr(
+				"RAGLens found two retrieved chunks that state different numeric values in similar local context.",
+			),
 			Details: models.JSONMap{
-				"detected_values": values,
-				"source_chunks":   refundWindows,
 				"rule":            TypeConflictingChunks,
+				"left_value":      leftValue,
+				"right_value":     rightValue,
+				"detected_values": []string{leftValue, rightValue},
+				"left_chunk_id":   leftChunkID,
+				"right_chunk_id":  rightChunkID,
+				"shared_terms":    best.SharedTerms,
+				"reason":          "retrieved chunks contain different numeric values in similar local context",
 			},
-			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+			Evidence:          evidence,
+			Diagnostics:       diagnostics,
+			Signals:           signals,
+			RecommendedAction: stringPtr("Inspect source freshness, document versioning, and retrieval ranking to decide which retrieved chunk should be trusted."),
+			CreatedAt:         time.Now().UTC().Format(time.RFC3339Nano),
 		},
 	}
+}
+
+func isBetterChunkConflictCandidate(candidate chunkConflictCandidate, current chunkConflictCandidate) bool {
+	if len(candidate.SharedTerms) != len(current.SharedTerms) {
+		return len(candidate.SharedTerms) > len(current.SharedTerms)
+	}
+
+	candidateScore := combinedChunkScore(candidate.Left.Chunk.Score, candidate.Right.Chunk.Score)
+	currentScore := combinedChunkScore(current.Left.Chunk.Score, current.Right.Chunk.Score)
+
+	if candidateScore != currentScore {
+		return candidateScore > currentScore
+	}
+
+	candidateRank := candidate.Left.ChunkRank + candidate.Right.ChunkRank
+	currentRank := current.Left.ChunkRank + current.Right.ChunkRank
+
+	return candidateRank < currentRank
+}
+
+func combinedChunkScore(left *float64, right *float64) float64 {
+	if left == nil && right == nil {
+		return -1
+	}
+
+	leftValue := 0.0
+	if left != nil {
+		leftValue = *left
+	}
+
+	rightValue := 0.0
+	if right != nil {
+		rightValue = *right
+	}
+
+	return leftValue + rightValue
 }
 
 type numericExpression struct {
@@ -1318,6 +1562,7 @@ func contextStopwords() map[string]bool {
 		"to": true, "of": true, "in": true, "on": true, "for": true, "with": true,
 		"within": true, "from": true, "by": true, "at": true, "as": true,
 		"can": true, "may": true, "must": true, "should": true, "will": true,
+		"also": true, "this": true, "that": true, "these": true, "those": true,
 		"customers": true, "customer": true, "users": true, "user": true,
 		"days": true, "day": true, "business": true, "months": true, "month": true,
 		"years": true, "year": true, "hours": true, "hour": true,
@@ -1414,6 +1659,16 @@ func nullableScore(score *float64) any {
 	return *score
 }
 
+type answerClaimSupportCandidate struct {
+	Claim         string
+	ClaimTerms    []string
+	BestChunk     retrievedChunk
+	BestChunkRank int
+	MatchedTerms  []string
+	MissingTerms  []string
+	SupportRatio  float64
+}
+
 func (e *Engine) detectAnswerNotGrounded(payload models.TracePayload) []models.Warning {
 	answer, llmSpanID := extractFinalAnswer(payload)
 	answer = strings.TrimSpace(answer)
@@ -1431,70 +1686,372 @@ func (e *Engine) detectAnswerNotGrounded(payload models.TracePayload) []models.W
 	// Case 1:
 	// The model gave a concrete answer even though retrieval returned no chunks.
 	if len(chunks) == 0 {
+		answerDiagnosticID := newDiagnosticObjectID()
+
+		evidence := []models.EvidenceItem{
+			{
+				EvidenceID: newEvidenceID(),
+				Type:       "answer_snippet",
+				Label:      "Final answer without retrieved evidence",
+				SpanID:     llmSpanID,
+				Snippet:    answer,
+				Attributes: models.JSONMap{
+					"supporting_chunks": 0,
+				},
+				DiagnosticObjectIDs: []string{answerDiagnosticID},
+			},
+		}
+
+		diagnostics := []models.DiagnosticObject{
+			{
+				DiagnosticObjectID: answerDiagnosticID,
+				Type:               "answer_claim",
+				Label:              "Final answer produced without retrieval support",
+				SpanID:             llmSpanID,
+				Text:               answer,
+				Normalized: models.JSONMap{
+					"supporting_chunks": 0,
+				},
+				Attributes: models.JSONMap{
+					"source": "answer",
+				},
+			},
+		}
+
+		signals := []models.DiagnosticSignal{
+			{
+				SignalID:   "retrieved_chunk_count_zero_for_answer",
+				Label:      "Final answer was produced with zero retrieved chunks",
+				Observed:   0,
+				Expected:   "> 0",
+				Comparator: "equal",
+				Strength:   "strong",
+			},
+		}
+
 		return []models.Warning{
 			{
-				WarningID: newWarningID(),
-				TraceID:   payload.Trace.TraceID,
-				SpanID:    llmSpanID,
-				Type:      TypeAnswerNotGrounded,
-				Severity:  SeverityWarning,
-				Message:   "Answer may not be grounded because no retrieved chunks were available.",
+				WarningID:     newWarningID(),
+				TraceID:       payload.Trace.TraceID,
+				SpanID:        llmSpanID,
+				Type:          TypeAnswerNotGrounded,
+				Severity:      SeverityWarning,
+				Message:       "Answer may not be grounded because no retrieved chunks were available.",
+				SchemaVersion: stringPtr("2"),
+				RuleID:        stringPtr(TypeAnswerNotGrounded),
+				RuleVersion:   stringPtr("2"),
+				Title:         stringPtr("Answer produced without retrieved evidence"),
+				Category:      stringPtr("grounding"),
+				Confidence:    float64Ptr(0.85),
+				Explanation: stringPtr(
+					"RAGLens found a final answer even though no retrieved chunks were available to support it.",
+				),
 				Details: models.JSONMap{
 					"rule":   TypeAnswerNotGrounded,
 					"answer": answer,
 					"reason": "final answer was produced without retrieved chunks",
 				},
-				CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+				Evidence:          evidence,
+				Diagnostics:       diagnostics,
+				Signals:           signals,
+				RecommendedAction: stringPtr("Check why the answer generation step ran without retrieved context, or require the model to abstain when retrieval returns no evidence."),
+				CreatedAt:         time.Now().UTC().Format(time.RFC3339Nano),
 			},
 		}
 	}
 
-	// Case 2:
-	// Simplified MVP grounding check:
-	// If the answer contains concrete refund-window day values that do not
-	// appear in retrieved chunks, flag it.
-	answerDays := extractRefundWindowDays(answer)
-	if len(answerDays) == 0 {
+	unsupported := findUnsupportedAnswerClaim(answer, chunks)
+	if unsupported == nil {
 		return nil
 	}
 
-	contextDays := map[string]bool{}
-	for _, chunk := range chunks {
-		for _, day := range extractRefundWindowDays(chunk.Text) {
-			contextDays[day] = true
-		}
+	answerDiagnosticID := newDiagnosticObjectID()
+	overlapDiagnosticID := newDiagnosticObjectID()
+
+	chunkID := unsupported.BestChunk.ChunkID
+	chunkSpanID := unsupported.BestChunk.SpanID
+
+	evidence := []models.EvidenceItem{
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "answer_snippet",
+			Label:      "Unsupported answer claim",
+			SpanID:     llmSpanID,
+			Snippet:    unsupported.Claim,
+			Attributes: models.JSONMap{
+				"claim_terms":   unsupported.ClaimTerms,
+				"missing_terms": unsupported.MissingTerms,
+				"support_score": unsupported.SupportRatio,
+			},
+			DiagnosticObjectIDs: []string{answerDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "chunk_snippet",
+			Label:      "Closest retrieved chunk",
+			SpanID:     &chunkSpanID,
+			ChunkID:    &chunkID,
+			Source:     chunkSource(unsupported.BestChunk),
+			Snippet:    unsupported.BestChunk.Text,
+			Attributes: models.JSONMap{
+				"rank":          unsupported.BestChunkRank,
+				"score":         nullableScore(unsupported.BestChunk.Score),
+				"matched_terms": unsupported.MatchedTerms,
+				"missing_terms": unsupported.MissingTerms,
+				"support_score": unsupported.SupportRatio,
+			},
+			DiagnosticObjectIDs: []string{overlapDiagnosticID},
+		},
+		{
+			EvidenceID: newEvidenceID(),
+			Type:       "overlap_measure",
+			Label:      "Claim support measurement",
+			Snippet: fmt.Sprintf(
+				"Best support score %.0f%%; missing terms: %s.",
+				unsupported.SupportRatio*100,
+				strings.Join(unsupported.MissingTerms, ", "),
+			),
+			Attributes: models.JSONMap{
+				"support_score": unsupported.SupportRatio,
+				"claim_terms":   unsupported.ClaimTerms,
+				"matched_terms": unsupported.MatchedTerms,
+				"missing_terms": unsupported.MissingTerms,
+				"threshold":     0.45,
+			},
+		},
 	}
 
-	unsupportedDays := make([]string, 0)
-	for _, day := range answerDays {
-		if !contextDays[day] {
-			unsupportedDays = append(unsupportedDays, day)
-		}
+	diagnostics := []models.DiagnosticObject{
+		{
+			DiagnosticObjectID: answerDiagnosticID,
+			Type:               "answer_claim",
+			Label:              "Unsupported answer claim",
+			SpanID:             llmSpanID,
+			Text:               unsupported.Claim,
+			Normalized: models.JSONMap{
+				"terms": unsupported.ClaimTerms,
+			},
+			Attributes: models.JSONMap{
+				"source":        "answer",
+				"support_score": unsupported.SupportRatio,
+			},
+		},
+		{
+			DiagnosticObjectID: overlapDiagnosticID,
+			Type:               "overlap_result",
+			Label:              "Closest retrieved support for answer claim",
+			SpanID:             &chunkSpanID,
+			Text:               unsupported.BestChunk.Text,
+			Normalized: models.JSONMap{
+				"matched_terms": unsupported.MatchedTerms,
+				"missing_terms": unsupported.MissingTerms,
+				"support_score": unsupported.SupportRatio,
+			},
+			Attributes: models.JSONMap{
+				"chunk_id": chunkID,
+				"rank":     unsupported.BestChunkRank,
+				"score":    nullableScore(unsupported.BestChunk.Score),
+			},
+		},
 	}
 
-	if len(unsupportedDays) == 0 {
-		return nil
+	signals := []models.DiagnosticSignal{
+		{
+			SignalID:   "answer_claim_support_below_threshold",
+			Label:      "Answer claim has weak support in retrieved chunks",
+			Observed:   unsupported.SupportRatio,
+			Expected:   ">= 0.45",
+			Comparator: "less_than",
+			Strength:   "moderate",
+		},
+		{
+			SignalID:   "important_claim_terms_missing",
+			Label:      "Important claim terms are missing from the closest retrieved chunk",
+			Observed:   strings.Join(unsupported.MissingTerms, ", "),
+			Expected:   "important claim terms present in retrieved evidence",
+			Comparator: "missing_terms",
+			Strength:   "moderate",
+			Attributes: models.JSONMap{
+				"missing_terms": unsupported.MissingTerms,
+			},
+		},
 	}
-
-	sort.Strings(unsupportedDays)
 
 	return []models.Warning{
 		{
-			WarningID: newWarningID(),
-			TraceID:   payload.Trace.TraceID,
-			SpanID:    llmSpanID,
-			Type:      TypeAnswerNotGrounded,
-			Severity:  SeverityWarning,
-			Message:   "Answer contains claims not found in retrieved chunks.",
+			WarningID:     newWarningID(),
+			TraceID:       payload.Trace.TraceID,
+			SpanID:        llmSpanID,
+			Type:          TypeAnswerNotGrounded,
+			Severity:      SeverityWarning,
+			Message:       "Answer contains a claim that is weakly supported by retrieved chunks.",
+			SchemaVersion: stringPtr("2"),
+			RuleID:        stringPtr(TypeAnswerNotGrounded),
+			RuleVersion:   stringPtr("2"),
+			Title:         stringPtr("Answer contains an unsupported claim"),
+			Category:      stringPtr("grounding"),
+			Confidence:    float64Ptr(0.8),
+			Explanation: stringPtr(
+				"RAGLens found an answer sentence whose important terms are weakly supported by the retrieved chunks.",
+			),
 			Details: models.JSONMap{
-				"rule":             TypeAnswerNotGrounded,
-				"answer":           answer,
-				"unsupported_days": unsupportedDays,
-				"reason":           "answer contains day values that do not appear in retrieved chunks",
+				"rule":          TypeAnswerNotGrounded,
+				"answer":        answer,
+				"claim":         unsupported.Claim,
+				"claim_terms":   unsupported.ClaimTerms,
+				"matched_terms": unsupported.MatchedTerms,
+				"missing_terms": unsupported.MissingTerms,
+				"support_score": unsupported.SupportRatio,
+				"chunk_id":      chunkID,
+				"chunk_rank":    unsupported.BestChunkRank,
+				"reason":        "answer claim has weak lexical support in retrieved chunks",
 			},
-			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
+			Evidence:          evidence,
+			Diagnostics:       diagnostics,
+			Signals:           signals,
+			RecommendedAction: stringPtr("Compare the unsupported answer claim with the retrieved chunks and tighten the prompt to avoid adding facts that are not present in context."),
+			CreatedAt:         time.Now().UTC().Format(time.RFC3339Nano),
 		},
 	}
+}
+
+func findUnsupportedAnswerClaim(answer string, chunks []retrievedChunk) *answerClaimSupportCandidate {
+	claims := splitAnswerClaims(answer)
+
+	var weakest *answerClaimSupportCandidate
+
+	for _, claim := range claims {
+		if isSkippableAnswerClaim(claim) {
+			continue
+		}
+
+		claimTerms := importantContextTerms(claim)
+		if len(claimTerms) < 2 {
+			continue
+		}
+
+		candidate := bestClaimSupport(claim, claimTerms, chunks)
+		if candidate == nil {
+			continue
+		}
+
+		if candidate.SupportRatio >= 0.45 {
+			continue
+		}
+
+		if weakest == nil || candidate.SupportRatio < weakest.SupportRatio {
+			weakest = candidate
+		}
+	}
+
+	return weakest
+}
+
+func splitAnswerClaims(answer string) []string {
+	result := make([]string, 0)
+
+	start := 0
+	for index, char := range answer {
+		if char != '.' && char != '!' && char != '?' && char != '\n' {
+			continue
+		}
+
+		claim := strings.TrimSpace(answer[start : index+len(string(char))])
+		if claim != "" {
+			result = append(result, claim)
+		}
+
+		start = index + len(string(char))
+	}
+
+	if start < len(answer) {
+		claim := strings.TrimSpace(answer[start:])
+		if claim != "" {
+			result = append(result, claim)
+		}
+	}
+
+	return result
+}
+
+func isSkippableAnswerClaim(claim string) bool {
+	claim = strings.TrimSpace(claim)
+	if len(claim) < 24 {
+		return true
+	}
+
+	if containsUncertaintyPhrase(claim) {
+		return true
+	}
+
+	normalized := strings.ToLower(claim)
+	skipPrefixes := []string{
+		"according to the context",
+		"based on the context",
+		"based on the retrieved context",
+		"the retrieved context says",
+	}
+
+	for _, prefix := range skipPrefixes {
+		if strings.HasPrefix(normalized, prefix) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func bestClaimSupport(claim string, claimTerms []string, chunks []retrievedChunk) *answerClaimSupportCandidate {
+	var best *answerClaimSupportCandidate
+
+	for index, chunk := range chunks {
+		chunkTerms := importantContextTerms(chunk.Text)
+		matchedTerms := sharedContextTerms(claimTerms, chunkTerms)
+		missingTerms := missingTerms(claimTerms, matchedTerms)
+
+		supportRatio := 0.0
+		if len(claimTerms) > 0 {
+			supportRatio = float64(len(matchedTerms)) / float64(len(claimTerms))
+		}
+
+		candidate := answerClaimSupportCandidate{
+			Claim:         claim,
+			ClaimTerms:    claimTerms,
+			BestChunk:     chunk,
+			BestChunkRank: index + 1,
+			MatchedTerms:  matchedTerms,
+			MissingTerms:  missingTerms,
+			SupportRatio:  supportRatio,
+		}
+
+		if best == nil || isBetterClaimSupport(candidate, *best) {
+			best = &candidate
+		}
+	}
+
+	return best
+}
+
+func isBetterClaimSupport(candidate answerClaimSupportCandidate, current answerClaimSupportCandidate) bool {
+	if candidate.SupportRatio != current.SupportRatio {
+		return candidate.SupportRatio > current.SupportRatio
+	}
+
+	candidateScore := -1.0
+	if candidate.BestChunk.Score != nil {
+		candidateScore = *candidate.BestChunk.Score
+	}
+
+	currentScore := -1.0
+	if current.BestChunk.Score != nil {
+		currentScore = *current.BestChunk.Score
+	}
+
+	if candidateScore != currentScore {
+		return candidateScore > currentScore
+	}
+
+	return candidate.BestChunkRank < current.BestChunkRank
 }
 
 type retrievedChunk struct {
