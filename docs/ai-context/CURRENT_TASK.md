@@ -2,9 +2,11 @@
 
 ## Current Focus
 
-RAGLens v0.1 is complete.
+RAGLens v0.1 is complete and smoke-tested.
 
-RAGLens v0.2 Developer Integration / Local SDK Onboarding is implemented, packaged locally, documented, and smoke-tested.
+RAGLens v0.2 Developer Integration / Local SDK Onboarding is complete, documented, and smoke-tested.
+
+RAGLens is now starting v0.3 - RAG Quality Analysis / Diagnostic Intelligence.
 
 The project now has:
 
@@ -18,7 +20,15 @@ The project now has:
 
 ## Current Goal
 
-Close out v0.2 status documentation and select/design v0.3 RAG Quality Analysis / Diagnostic Intelligence.
+Start and define v0.3 RAG Quality Analysis / Diagnostic Intelligence.
+
+Current focus:
+
+- design Warning Schema v2
+- design DiagnosticObject structure
+- define evidence-backed warning details
+- define the first deterministic diagnostic rules
+- define dashboard evidence-backed warning UX
 
 ## Current System Status
 
@@ -75,9 +85,9 @@ React Dashboard
 
 ## Current Milestone
 
-v0.2 Developer Integration / Local SDK Onboarding.
+v0.3 RAG Quality Analysis / Diagnostic Intelligence.
 
-Status: completed.
+Status: starting.
 
 ## Smoke-Tested Validation
 
@@ -96,8 +106,14 @@ Verified in dashboard:
 - built-in local RAG demo traces
 - warning-focused demo traces and warning cards
 
+Milestone status:
+
+- v0.1 completed and smoke-tested
+- v0.2 completed and smoke-tested
+
 ## Files Recently Updated
 
+- `docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md` - v0.3 scope and diagnostic intelligence design spec
 - `README.md` - two-path v0.2 quickstart for built-in demo and real SDK integration
 - `docs/product/USER_ONBOARDING.md` - developer onboarding flow for existing RAG apps
 - `docs/integrations/PYTHON_SDK_GUIDE.md` - current Python SDK API guide
@@ -108,6 +124,21 @@ Verified in dashboard:
 - `docs/ai-context/ROADMAP.md` - v0.2 status updated
 - `docs/ai-context/DEVLOG.md` - v0.2 completion notes
 - `docs/ai-context/AI_HANDOFF.md` - refreshed handoff and next milestone options
+
+## Current Guardrails
+
+- Do not start LangChain adapters.
+- Do not start LlamaIndex adapters.
+- Do not start PyPI work.
+- Do not start Docker work.
+- Do not start CLI work.
+- Do not start packaging work beyond the current local editable SDK path.
+- Do not add agent spans.
+- Do not add tool spans.
+- Do not add memory spans.
+- Do not make LLM-as-judge the default path.
+- Continue local-first.
+- Continue deterministic-first.
 
 ## Current Implementation Limits
 
@@ -138,10 +169,11 @@ Still not implemented:
 
 ## Next Task
 
-Choose and design v0.3 RAG Quality Analysis / Diagnostic Intelligence.
+Design and specify v0.3 RAG Quality Analysis / Diagnostic Intelligence.
 
 Recommended next options:
 
 1. Define warning schema v2 and evidence-backed warning detail payloads.
-2. Design improved grounding/retrieval diagnostics and dashboard warning details.
-3. Keep optional LLM-assisted diagnostics as later/future, not default local path.
+2. Define DiagnosticObject and EvidenceItem structures for deterministic warning analysis.
+3. Design improved grounding/retrieval diagnostics and dashboard warning details.
+4. Keep optional LLM-assisted diagnostics as later/future, not default local path.

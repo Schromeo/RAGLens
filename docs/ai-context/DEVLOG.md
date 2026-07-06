@@ -1,5 +1,28 @@
 # Devlog
 
+## 2026-07-06 (v0.3 Diagnostic Intelligence Spec Added)
+
+### Completed
+
+- Added `docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md`.
+- Defined v0.3 as the milestone that upgrades warning flags into evidence-backed diagnostic insights.
+- Captured the first structured design for:
+  - Warning Schema v2
+  - EvidenceItem schema
+  - DiagnosticObject schema
+- Defined the first enhanced warning set:
+  - `low_retrieval_score_v2`
+  - `weak_query_chunk_overlap`
+  - `answer_not_grounded_v2`
+  - `numeric_mismatch`
+  - `conflicting_chunks_v2`
+- Locked scope boundaries so v0.3 remains local-first, deterministic-first, and limited to current `retrieval` and `llm` spans.
+
+### Notes
+
+- Explicitly out of scope: LangChain, LlamaIndex, PyPI, Docker, CLI, agent spans, tool spans, memory spans, cloud, auth, and LLM-as-judge.
+- The document is a product and schema design spec only. No implementation work was started.
+
 ## 2026-07-02 (v0.2 Developer Integration / Local SDK Onboarding Completed)
 
 ### Completed

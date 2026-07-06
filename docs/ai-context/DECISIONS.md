@@ -1,5 +1,25 @@
 # Architecture Decisions
 
+## 2026-07-06 - v0.3 diagnostic intelligence remains local-first and deterministic-first
+
+### Decision
+
+Define v0.3 diagnostic intelligence around structured warning evidence and deterministic heuristics over the existing `retrieval` and `llm` spans.
+
+### Reason
+
+- The next product step should make warnings explainable before adding more infrastructure or integrations.
+- Deterministic local diagnostics are inspectable in the dashboard and easier to trust during debugging.
+- The current trace model is sufficient for a first evidence-backed warning system without adding agent, tool, or memory span families.
+
+### Outcome
+
+- v0.3 scope centers on Warning Schema v2, EvidenceItem, DiagnosticObject, and five first enhanced warning rules.
+- v0.3 explicitly excludes cloud, auth, LangChain, LlamaIndex, Docker, CLI, PyPI, and LLM-as-judge work.
+- Current implemented span types remain `retrieval` and `llm` only for this milestone.
+
+---
+
 ## 2026-05-14 — Start with RAGLens instead of full TraceForge
 
 ### Decision

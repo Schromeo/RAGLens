@@ -6,10 +6,10 @@ Each version includes clear scope boundaries so RAGLens stays local-first, light
 
 ## Current Snapshot
 
-**Current version:** v0.2 — Developer Integration / Local SDK Onboarding  
-**Status:** Completed
+**Current version:** v0.3 — RAG Quality Analysis / Diagnostic Intelligence  
+**Status:** In Progress
 
-RAGLens now has a working local inspection loop for both the built-in demo and user-owned Python RAG pipelines:
+RAGLens has completed the local inspection loop for both the built-in demo and user-owned Python RAG pipelines, and is now upgrading the warning layer into evidence-backed diagnostics:
 
 ```text
 Python SDK
@@ -34,7 +34,7 @@ Current warning rules:
 * `conflicting_chunks`
 * simplified `answer_not_grounded`
 
-v0.2 completion highlights:
+Completed foundation highlights:
 
 * `docs/product/USER_ONBOARDING.md`
 * `docs/integrations/PYTHON_SDK_GUIDE.md`
@@ -44,12 +44,13 @@ v0.2 completion highlights:
 * README documentation map for users and maintainers
 * SDK packaging hygiene (`sdk/python` version `0.2.0`, local SDK README, local editable install path)
 * integration smoke test validation through the dashboard
+* v0.3 diagnostic intelligence design spec in `docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md`
 
 ---
 
 ## v0.1 — Local RAG Debugger MVP
 
-**Status:** Completed
+**Status:** Done
 
 ### Goal
 
@@ -117,7 +118,7 @@ Verified:
 
 ## v0.2 — Developer Integration / Local SDK Onboarding
 
-**Status:** Completed
+**Status:** Done
 
 ### Goal
 
@@ -214,30 +215,33 @@ Not part of current v0.2 implementation:
 
 ## v0.3 — RAG Quality Analysis / Diagnostic Intelligence
 
-**Status:** Not Started
+**Status:** Current / In Progress
 
 ### Goal
 
-RAG Quality Analysis / Diagnostic Intelligence.
+Upgrade warnings from simple flags into evidence-backed diagnostics.
 
-### Candidate Scope
+### Scope
 
 * warning schema v2
 * evidence-backed warning details
+* diagnostic object design
 * improved `answer_not_grounded` heuristics
-* numeric/date/entity grounding checks
-* retrieval quality diagnostics
+* weak query/chunk overlap diagnostics
+* numeric mismatch diagnostics
 * conflict detection v2
 * dashboard warning detail improvements
-* optional future LLM-assisted diagnostics (later, not default local path)
 
 ### Out of Scope
 
-Still not part of this milestone by default:
+Not part of this milestone:
 
+* LangChain / LlamaIndex
+* PyPI / Docker / CLI
+* agent/tool/memory spans
+* LLM-as-judge default path
 * cloud sync
 * auth
 * hosted collector
-* tool/memory/verification/human feedback spans
 
-These remain future direction only and are intentionally separate from current v0.2 scope.
+These remain intentionally outside the v0.3 local-first deterministic-first path.
