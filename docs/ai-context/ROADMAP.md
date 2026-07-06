@@ -7,7 +7,7 @@ Each version includes clear scope boundaries so RAGLens stays local-first, light
 ## Current Snapshot
 
 **Current version:** v0.3 — RAG Quality Analysis / Diagnostic Intelligence  
-**Status:** In Progress
+**Status:** Core implemented and smoke-tested
 
 RAGLens has completed the local inspection loop for both the built-in demo and user-owned Python RAG pipelines, and is now upgrading the warning layer into evidence-backed diagnostics:
 
@@ -31,8 +31,10 @@ Current warning rules:
 * `no_retrieved_chunks`
 * `low_retrieval_score`
 * `duplicate_chunks`
+* `weak_query_chunk_overlap`
 * `conflicting_chunks`
-* simplified `answer_not_grounded`
+* `answer_not_grounded`
+* `numeric_mismatch`
 
 Completed foundation highlights:
 
@@ -45,6 +47,8 @@ Completed foundation highlights:
 * SDK packaging hygiene (`sdk/python` version `0.2.0`, local SDK README, local editable install path)
 * integration smoke test validation through the dashboard
 * v0.3 diagnostic intelligence design spec in `docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md`
+* v0.3 diagnostic quality demo cases for numeric mismatch, weak overlap, unsupported claim, and conflicting chunks
+* evidence-backed warning detail UI with compared-value and recommended-action blocks
 
 ---
 
@@ -215,7 +219,7 @@ Not part of current v0.2 implementation:
 
 ## v0.3 — RAG Quality Analysis / Diagnostic Intelligence
 
-**Status:** Current / In Progress
+**Status:** Core implemented and smoke-tested
 
 ### Goal
 
@@ -223,14 +227,30 @@ Upgrade warnings from simple flags into evidence-backed diagnostics.
 
 ### Scope
 
-* warning schema v2
-* evidence-backed warning details
-* diagnostic object design
-* improved `answer_not_grounded` heuristics
-* weak query/chunk overlap diagnostics
-* numeric mismatch diagnostics
-* conflict detection v2
-* dashboard warning detail improvements
+* [x] warning schema v2
+* [x] evidence-backed warning details
+* [x] diagnostic object design
+* [x] improved `answer_not_grounded` heuristics
+* [x] weak query/chunk overlap diagnostics
+* [x] numeric mismatch diagnostics
+* [x] conflict detection v2
+* [x] dashboard warning detail improvements
+* [x] diagnostic quality demo cases
+
+### Validation
+
+Validated with:
+
+```bash
+cd collector/go
+go test ./...
+
+cd dashboard/web
+npm run build
+
+cd sdk/python
+python -m examples.diagnostic_quality_demo all
+```
 
 ### Out of Scope
 

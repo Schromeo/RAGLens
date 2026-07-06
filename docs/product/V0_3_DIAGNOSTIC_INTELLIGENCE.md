@@ -10,20 +10,50 @@ Warnings should explain why they were raised, which chunks, claims, and values w
 
 The design remains local-first and deterministic-first.
 
+## Status Update
+
+As of 2026-07-06, the v0.3 diagnostic intelligence core is implemented and smoke-tested.
+
+Completed in code:
+
+- Warning Schema v2 default enrichment in the collector
+- evidence-backed warning payloads with signals and diagnostics
+- `weak_query_chunk_overlap`
+- `numeric_mismatch`
+- evidence-backed `answer_not_grounded`
+- evidence-backed `conflicting_chunks`
+- diagnostic quality demo cases
+- dashboard warning detail UI for evidence, numeric diffs, and recommended actions
+
+Validated with:
+
+```bash
+cd collector/go
+go test ./...
+
+cd dashboard/web
+npm run build
+
+cd sdk/python
+python -m examples.diagnostic_quality_demo all
+```
+
 Current implemented span types are still only:
 
 - `retrieval`
 - `llm`
 
-Current shipped warning rules are still only:
+Current shipped warning rules are now:
 
 - `no_retrieved_chunks`
 - `low_retrieval_score`
 - `duplicate_chunks`
+- `weak_query_chunk_overlap`
 - `conflicting_chunks`
-- simplified `answer_not_grounded`
+- `answer_not_grounded`
+- `numeric_mismatch`
 
-v0.3 defines how RAGLens should evolve beyond those simple flags without introducing cloud dependencies, framework adapters, or non-deterministic judge systems.
+v0.3 establishes the first implemented evidence-backed diagnostic layer without introducing cloud dependencies, framework adapters, or non-deterministic judge systems.
 
 ---
 

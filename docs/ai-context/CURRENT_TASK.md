@@ -6,7 +6,7 @@ RAGLens v0.1 is complete and smoke-tested.
 
 RAGLens v0.2 Developer Integration / Local SDK Onboarding is complete, documented, and smoke-tested.
 
-RAGLens is now starting v0.3 - RAG Quality Analysis / Diagnostic Intelligence.
+RAGLens v0.3 Diagnostic Intelligence core is now implemented and smoke-tested.
 
 The project now has:
 
@@ -20,15 +20,13 @@ The project now has:
 
 ## Current Goal
 
-Start and define v0.3 RAG Quality Analysis / Diagnostic Intelligence.
+Document the completed v0.3 diagnostic intelligence core and prepare the next follow-up slice.
 
 Current focus:
 
-- design Warning Schema v2
-- design DiagnosticObject structure
-- define evidence-backed warning details
-- define the first deterministic diagnostic rules
-- define dashboard evidence-backed warning UX
+- finalize v0.3 implementation documentation
+- capture smoke-tested validation status
+- identify the next narrow follow-up after the core milestone
 
 ## Current System Status
 
@@ -56,14 +54,18 @@ Completed so far:
   - `no_retrieved_chunks`
   - `low_retrieval_score`
   - `duplicate_chunks`
-  - `conflicting_chunks`
-  - simplified `answer_not_grounded`
+  - `weak_query_chunk_overlap`
+  - `conflicting_chunks` with evidence-backed v2 details
+  - `answer_not_grounded` with evidence-backed v2 details
+  - `numeric_mismatch`
 - Real Local RAG Demo completed and verified
 - `docs/product/USER_ONBOARDING.md` completed
 - `docs/integrations/PYTHON_SDK_GUIDE.md` completed
 - `sdk/python/examples/custom_pipeline_demo.py` added
 - `scripts/start-raglens.py` added and polished
 - `README.md` updated with two Quickstart paths
+- `sdk/python/examples/diagnostic_quality_demo.py` covers all current v0.3 core warning cases
+- dashboard warning detail cards show evidence previews, numeric value diffs, and recommended actions
 
 ## Current Working Path
 
@@ -87,17 +89,24 @@ React Dashboard
 
 v0.3 RAG Quality Analysis / Diagnostic Intelligence.
 
-Status: starting.
+Status: core implemented and smoke-tested.
 
 ## Smoke-Tested Validation
 
 The following commands passed:
 
 ```bash
+cd collector/go
+go test ./...
+
+cd dashboard/web
+npm run build
+
 python scripts/start-raglens.py
 cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
+python -m examples.diagnostic_quality_demo all
 ```
 
 Verified in dashboard:
@@ -105,14 +114,22 @@ Verified in dashboard:
 - `custom-rag-pipeline`
 - built-in local RAG demo traces
 - warning-focused demo traces and warning cards
+- evidence-backed warning detail sections
+- numeric mismatch value-diff block
+- recommended action label in warning detail cards
 
 Milestone status:
 
 - v0.1 completed and smoke-tested
 - v0.2 completed and smoke-tested
+- v0.3 diagnostic intelligence core completed and smoke-tested
 
 ## Files Recently Updated
 
+- `collector/go/internal/warnings/engine.go` - v0.3 evidence-backed diagnostics and rule logic
+- `dashboard/web/src/pages/TraceDetailPage.tsx` - evidence-backed warning rendering and recommended action label
+- `dashboard/web/src/style.css` - warning detail and responsive layout polish
+- `sdk/python/examples/diagnostic_quality_demo.py` - deterministic v0.3 diagnostic demo cases
 - `docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md` - v0.3 scope and diagnostic intelligence design spec
 - `README.md` - two-path v0.2 quickstart for built-in demo and real SDK integration
 - `docs/product/USER_ONBOARDING.md` - developer onboarding flow for existing RAG apps

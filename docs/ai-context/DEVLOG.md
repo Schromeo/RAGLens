@@ -1,5 +1,57 @@
 # Devlog
 
+## 2026-07-06 (v0.3 Diagnostic Intelligence Core Implemented and Smoke-Tested)
+
+### Completed
+
+- Implemented Warning Schema v2 defaults and evidence-backed warning enrichment in the collector.
+- Implemented or upgraded the first v0.3 diagnostic rules:
+  - `weak_query_chunk_overlap`
+  - `numeric_mismatch`
+  - `answer_not_grounded` with v2 evidence-backed payloads
+  - `conflicting_chunks` with v2 evidence-backed payloads
+- Added deterministic demo cases in `sdk/python/examples/diagnostic_quality_demo.py` for:
+  - `numeric_mismatch`
+  - `weak_query_chunk_overlap`
+  - `answer_not_grounded`
+  - `conflicting_chunks`
+- Updated the dashboard warning detail UI to show:
+  - evidence preview blocks
+  - compared numeric values for `numeric_mismatch`
+  - recommended action labeling
+  - responsive warning detail polish
+
+### Validation
+
+Validated with:
+
+```bash
+cd collector/go
+go test ./...
+
+cd dashboard/web
+npm run build
+
+cd sdk/python
+python -m examples.diagnostic_quality_demo all
+```
+
+Observed results:
+
+- Go collector packages compiled successfully.
+- Dashboard TypeScript and production build completed successfully.
+- All four v0.3 diagnostic demo cases ran successfully and flushed traces:
+  - `numeric_mismatch`
+  - `weak_query_chunk_overlap`
+  - `answer_not_grounded`
+  - `conflicting_chunks`
+
+### Notes
+
+- v0.3 core diagnostic intelligence is now implemented and smoke-tested.
+- The milestone remains local-first and deterministic-first.
+- Current span coverage remains limited to `retrieval` and `llm` spans.
+
 ## 2026-07-06 (v0.3 Diagnostic Intelligence Spec Added)
 
 ### Completed
