@@ -169,8 +169,10 @@ Current warning rules:
 - `no_retrieved_chunks`
 - `low_retrieval_score`
 - `duplicate_chunks`
-- `conflicting_chunks`
-- simplified `answer_not_grounded`
+- `weak_query_chunk_overlap`
+- `numeric_mismatch`
+- `conflicting_chunks` with evidence-backed v2 details
+- `answer_not_grounded` with evidence-backed v2 details
 
 Still not implemented:
 
@@ -190,15 +192,16 @@ Still not implemented:
 
 ## Next Task
 
-Design and specify v0.3 RAG Quality Analysis / Diagnostic Intelligence.
+Choose the next narrow follow-up after the completed v0.3 diagnostic intelligence core.
 
 Recommended next options:
 
-1. Define warning schema v2 and evidence-backed warning detail payloads.
-2. Define DiagnosticObject and EvidenceItem structures for deterministic warning analysis.
-3. Design improved grounding/retrieval diagnostics and dashboard warning details.
-4. Keep optional LLM-assisted diagnostics as later/future, not default local path.
+1. v0.3 polish: improve warning grouping / suppression when multiple related diagnostics fire on one trace.
+2. v0.3 polish: improve dashboard diagnostic detail views for signals, evidence, and compared values.
+3. v0.3 hardening: add focused Go tests for warning rules.
+4. v0.3 hardening: add more diagnostic demo cases and acceptance snapshots.
+5. Future milestone planning: decide whether v0.4 should focus on tests/hardening, local packaging, or integration adapters.
 
-Future TraceForge direction note:
+Guardrail:
 
-- agent harness observability capabilities such as running traces, partial ingestion, agent/tool/retry spans, and no-progress diagnostics remain future-only and are not part of current v0.3 implementation scope.
+Do not start LangChain, LlamaIndex, PyPI, Docker, CLI, agent/tool/memory spans, cloud, auth, or LLM-as-judge work unless explicitly selected as a future milestone.
