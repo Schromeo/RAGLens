@@ -1,5 +1,52 @@
 # Devlog
 
+## 2026-07-06 (v0.3 Backend Test Coverage Added)
+
+### Completed
+
+- Added focused Go unit tests for the v0.3 warning engine.
+- Covered core diagnostic rules:
+  - `numeric_mismatch`
+  - `weak_query_chunk_overlap`
+  - `answer_not_grounded`
+  - `conflicting_chunks`
+- Added SQLite storage round-trip tests for Warning Schema v2 payloads.
+- Verified that v2 warning fields persist and load correctly:
+  - `schema_version`
+  - `rule_id`
+  - `rule_version`
+  - `category`
+  - `confidence`
+  - `explanation`
+  - `evidence`
+  - `diagnostics`
+  - `signals`
+  - `recommended_action`
+- Added migration coverage for legacy `warnings` tables missing v2 columns.
+- Added API handler tests to verify that:
+  - `POST /api/traces` generates v0.3 warnings
+  - `GET /api/traces/{trace_id}` returns v2 warning fields for dashboard consumption
+
+### Validation
+
+Validated with:
+
+```bash
+cd collector/go
+go test ./... -count=1
+```
+
+Observed result:
+
+- warning engine tests passed
+- storage round-trip tests passed
+- legacy warning table migration test passed
+- API handler tests passed
+
+### Notes
+
+- v0.3 diagnostic intelligence is now covered at the rule, storage, and API layers.
+
 ## 2026-07-06 (v0.3 Diagnostic Intelligence Core Implemented and Smoke-Tested)
 
 ### Completed

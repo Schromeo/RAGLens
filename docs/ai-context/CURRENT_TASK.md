@@ -109,6 +109,20 @@ python -m examples.local_rag_demo.run_demo trace-all
 python -m examples.diagnostic_quality_demo all
 ```
 
+Additional backend test coverage added:
+
+```bash
+cd collector/go
+go test ./... -count=1
+```
+
+Covered:
+
+- warning engine unit tests for v0.3 rules
+- SQLite Warning Schema v2 round-trip persistence
+- legacy warning table migration for v2 columns
+- API handler coverage for v0.3 warning generation and trace-detail response fields
+
 Verified in dashboard:
 
 - `custom-rag-pipeline`

@@ -16,27 +16,82 @@ RAGLens is a local-first visual debugger for RAG pipelines.
 
 Completed v0.1 foundation:
 
-* Python SDK tracing foundation
-* Go collector ingestion APIs
-* SQLite trace/span/warning persistence
-* React dashboard MVP
-* Warning Engine / Diagnosis Layer MVP
-* Real Local RAG Demo
-* Demo packaging / developer experience
+- Python SDK tracing foundation
+- Go collector ingestion APIs
+- SQLite trace/span/warning persistence
+- React dashboard MVP
+- Warning Engine / Diagnosis Layer MVP
+- Real Local RAG Demo
+- Demo packaging / developer experience
 
 ### v0.2 Status
 
 **v0.2 Developer Integration / Local SDK Onboarding is complete and smoke-tested.**
 
-Current completed v0.2 work:
+Completed v0.2 work:
 
-* `docs/product/USER_ONBOARDING.md`
-* `docs/integrations/PYTHON_SDK_GUIDE.md`
-* `sdk/python/examples/custom_pipeline_demo.py`
-* `scripts/start-raglens.py`
-* `README.md` two-path quickstart
-* root README documentation map
-* SDK packaging hygiene (`sdk/python` version `0.2.0`, local SDK README, local editable install path)
+- `docs/product/USER_ONBOARDING.md`
+- `docs/integrations/PYTHON_SDK_GUIDE.md`
+- `sdk/python/examples/custom_pipeline_demo.py`
+- `scripts/start-raglens.py`
+- `README.md` two-path quickstart
+- root README documentation map
+- SDK packaging hygiene:
+  - `sdk/python` version `0.2.0`
+  - local SDK README
+  - local editable install path
+
+### v0.3 Status
+
+**v0.3 RAG Quality Analysis / Diagnostic Intelligence core is complete and smoke-tested.**
+
+v0.3 upgraded RAGLens from simple warning flags into evidence-backed diagnostic insights.
+
+Completed v0.3 core work:
+
+- Warning Schema v2 infrastructure
+- evidence-backed warning payloads
+- deterministic diagnostic signals
+- diagnostic objects
+- evidence items
+- dashboard warning detail rendering
+- numeric value diff block
+- recommended action label
+- responsive warning detail layout polish
+- deterministic diagnostic demo cases
+
+Implemented or upgraded v0.3 warning rules:
+
+- `weak_query_chunk_overlap`
+- `numeric_mismatch`
+- `answer_not_grounded` with evidence-backed v2 details
+- `conflicting_chunks` with evidence-backed v2 details
+
+Existing warning rules retained:
+
+- `no_retrieved_chunks`
+- `low_retrieval_score`
+- `duplicate_chunks`
+
+### v0.3 Hardening Status
+
+**v0.3 backend hardening is underway and core backend tests now pass.**
+
+Added backend tests for:
+
+- warning engine unit tests
+- SQLite Warning Schema v2 round-trip persistence
+- legacy warning table migration for v2 columns
+- API handler coverage for v0.3 warning generation
+- API trace detail response coverage for v2 warning fields
+
+Current backend test coverage verifies:
+
+- v0.3 diagnostic rules generate expected warning types
+- v2 warning fields persist through SQLite
+- legacy warning tables can be migrated with v2 columns
+- `POST /api/traces` generates v0.3 warnings
+- `GET /api/traces/{trace_id}` returns dashboard-consumable v2 warning fields
 
 ## Current Implemented Flow
 
@@ -53,140 +108,275 @@ POST /api/traces
   ↓
 Go Collector (:4319)
   ↓
+Warning Engine
+  ↓
 SQLite
+  ↓
+GET /api/traces/{trace_id}
   ↓
 React Dashboard
 ```
 
 ## Exact Commands That Passed
 
-Validated commands:
+Validated v0.2 / v0.3 runtime commands:
 
 ```bash
 python scripts/start-raglens.py
+
 cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
+python -m examples.diagnostic_quality_demo all
 ```
 
-Verified results:
+Validated backend tests:
 
-* dashboard showed `custom-rag-pipeline`
-* dashboard showed built-in local RAG demo traces
-* dashboard showed warning-focused demo traces and warning cards
+```bash
+cd collector/go
+go test ./... -count=1
+```
 
-## Files Added or Updated
+Validated dashboard build:
 
-Core v0.2 onboarding artifacts:
+```bash
+cd dashboard/web
+npm run build
+```
 
-* `docs/product/USER_ONBOARDING.md`
-* `docs/integrations/PYTHON_SDK_GUIDE.md`
-* `sdk/python/examples/custom_pipeline_demo.py`
-* `scripts/start-raglens.py`
-* `README.md`
-* `sdk/python/pyproject.toml`
-* `sdk/python/README.md`
+## Verified Dashboard Results
 
-Status docs refreshed:
-
-* `docs/ai-context/ROADMAP.md`
-* `docs/ai-context/CURRENT_TASK.md`
-* `docs/ai-context/DEVLOG.md`
-* `docs/ai-context/AI_HANDOFF.md`
+- dashboard showed custom-rag-pipeline
+- dashboard showed built-in local RAG demo traces
+- dashboard showed warning-focused diagnostic demo traces
+- warning detail cards showed evidence-backed sections
+- numeric mismatch showed compared value diff block
+- recommended action label appeared in warning cards
 
 ## Current Implemented Span Types
 
 Only these span types are implemented today:
 
-* `retrieval`
-* `llm`
+- retrieval
+- llm
 
-Do not claim tool spans, memory spans, verification spans, human feedback spans, or agent tracing as implemented.
+Do not claim these as implemented yet:
+
+- tool spans
+- memory spans
+- verification spans
+- human feedback spans
+- agent spans
+- retry spans
+- running traces
+- partial span ingestion
 
 ## Current Warning Rules
 
-Implemented rules:
+Implemented warning rules:
 
-* `no_retrieved_chunks`
-* `low_retrieval_score`
-* `duplicate_chunks`
-* `conflicting_chunks`
-* simplified `answer_not_grounded`
+- no_retrieved_chunks
+- low_retrieval_score
+- duplicate_chunks
+- weak_query_chunk_overlap
+- numeric_mismatch
+- conflicting_chunks
+- answer_not_grounded
 
-Important limitation:
+Important current state:
 
-* `answer_not_grounded` is still a simplified deterministic rule, not a full grounding evaluator.
+- answer_not_grounded is now evidence-backed v2, but still deterministic and heuristic-based.
+- conflicting_chunks is now evidence-backed v2 for numeric conflicts in similar local context.
+- numeric_mismatch detects answer numeric values that conflict with retrieved chunk values.
+- weak_query_chunk_overlap detects low lexical overlap between the query and top retrieved chunks.
+- RAGLens still does not use LLM-as-judge by default.
+
+## Current v0.3 Diagnostic Demo Cases
+
+Current demo file:
+
+- sdk/python/examples/diagnostic_quality_demo.py
+
+Current cases:
+
+- numeric-mismatch
+- weak-overlap
+- unsupported-claim
+- conflicting-chunks
+- all
+
+Expected run command:
+
+```bash
+cd sdk/python
+python -m examples.diagnostic_quality_demo all
+```
+
+## Files Added or Updated Recently
+
+Core v0.3 implementation files:
+
+- collector/go/internal/warnings/engine.go
+- collector/go/internal/storage/sqlite.go
+- collector/go/internal/models/models.go
+- dashboard/web/src/pages/TraceDetailPage.tsx
+- dashboard/web/src/style.css
+- sdk/python/examples/diagnostic_quality_demo.py
+
+Backend test files added:
+
+- collector/go/internal/warnings/engine_test.go
+- collector/go/internal/storage/sqlite_test.go
+- collector/go/internal/api/server_test.go
+
+v0.3 documentation files:
+
+- docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md
+- docs/ai-context/ROADMAP.md
+- docs/ai-context/CURRENT_TASK.md
+- docs/ai-context/DEVLOG.md
+- docs/ai-context/AI_HANDOFF.md
+
+v0.2 onboarding artifacts still relevant:
+
+- docs/product/USER_ONBOARDING.md
+- docs/integrations/PYTHON_SDK_GUIDE.md
+- sdk/python/examples/custom_pipeline_demo.py
+- scripts/start-raglens.py
+- README.md
+- sdk/python/pyproject.toml
+- sdk/python/README.md
 
 ## Current Limitations
 
 Current scope limits:
 
-* only `retrieval` and `llm` spans are implemented
-* onboarding path is local-first and repo-based
-* editable install from local checkout is the supported SDK path today
-* no agent/tool/memory spans
-* no Docker Compose local setup yet
-* no packaged CLI yet
-* no PyPI publishing yet
-* no LangChain or LlamaIndex adapters yet
-* no raw OpenAI or Anthropic integration guides in current scope
-* no cloud sync, auth, hosted collector, or hosted features
-* no full LLM-as-judge grounding evaluator
-* no running-trace lifecycle handling for multi-step agent harnesses
-* no partial span ingestion
-* no retry spans
-* no diagnostics for agent loops, oscillation, retry storms, or no-progress execution
+- only retrieval and llm spans are implemented
+- onboarding path is local-first and repo-based
+- editable install from local checkout is the supported SDK path today
+- no Docker Compose local setup yet
+- no packaged CLI yet
+- no PyPI publishing yet
+- no LangChain adapter yet
+- no LlamaIndex adapter yet
+- no cloud sync, auth, hosted collector, or hosted features
+- no full LLM-as-judge grounding evaluator
+- no running-trace lifecycle handling for multi-step agent harnesses
+- no partial span ingestion
+- no retry spans
+- no diagnostics for agent loops, oscillation, retry storms, or no-progress execution
 
 ## Current Positioning
 
 RAGLens is:
 
-* a local-first visual debugger for RAG pipelines
-* a local trace and debugging layer for existing RAG apps
-* useful both with the built-in demo and with user-owned Python RAG pipelines instrumented through the SDK
+- a local-first visual debugger for RAG pipelines
+- a local trace and debugging layer for existing RAG apps
+- useful both with the built-in demo and with user-owned Python RAG pipelines instrumented through the SDK
+- currently strongest at explaining RAG failures through deterministic evidence-backed diagnostics
 
 RAGLens is not:
 
-* a chatbot framework
-* a vector database
-* a training framework
-* a hosted AI platform
-* a replacement for the user's RAG app
+- a chatbot framework
+- a vector database
+- a training framework
+- a hosted AI platform
+- a replacement for the user's RAG app
+- a general-purpose eval platform
+- a LangChain/LlamaIndex integration layer yet
+- an AgentOps platform yet
 
 ## Recommended Next Milestone
 
-### v0.3 — RAG Quality Analysis / Diagnostic Intelligence
+Recommended next step: v0.3.5 — Real LLM RAG Demo
 
-Recommended direction:
+The next step should not be v0.4 yet.
 
-* warning schema v2
-* evidence-backed warning details
-* improved `answer_not_grounded` heuristics
-* numeric/date/entity grounding checks
-* retrieval quality diagnostics
-* conflict detection v2
-* dashboard warning detail improvements
-* optional future LLM-assisted diagnostics later, not default local path
+Recommended version naming:
+
+- v0.3: Diagnostic Intelligence core
+- v0.3.5: hardening + real LLM validation demo
+- v0.4: packaging / distribution / external developer experience
+
+Recommended v0.3.5 goal:
+
+Validate RAGLens against a more realistic development workflow using a real LLM while keeping retrieval local and deterministic.
+
+Suggested new demo:
+
+- sdk/python/examples/real_llm_rag_demo.py
+
+or:
+
+- sdk/python/examples/openai_rag_demo.py
+
+Recommended first version:
+
+- use local markdown docs
+- use local deterministic TF-IDF retrieval first
+- call a real LLM for answer generation
+- trace retrieval span through RAGLens SDK
+- trace LLM span through RAGLens SDK
+- flush to collector
+- inspect resulting trace and warnings in dashboard
+
+Why this is next:
+
+- current demos are deterministic and intentionally synthetic
+- v0.3 proved the diagnostic layer works
+- the next important validation is whether RAGLens helps debug real model behavior
+- real LLM demo should come before packaging, Docker, CLI, or PyPI
+
+## Suggested v0.3.5 Scope
+
+In scope:
+
+- real LLM demo using existing Python SDK
+- one provider path initially, preferably OpenAI or local Ollama
+- local docs and local retriever to keep the setup simple
+- environment variable for API key if using hosted LLM
+- clear fallback or skip behavior if API key is missing
+- document how this simulates real RAG app development
+- keep RAGLens as a tracing/debugging layer, not the RAG framework
+
+Out of scope for v0.3.5:
+
+- LangChain adapter
+- LlamaIndex adapter
+- Docker
+- PyPI
+- packaged CLI
+- agent spans
+- tool spans
+- memory spans
+- cloud sync
+- hosted collector
+- auth
+- LLM-as-judge default evaluator
 
 ## Important Guardrails
 
-Still future direction only, not current implementation:
-
-* tool spans
-* memory spans
-* verification spans
-* human feedback spans
-* agent tracing
-* cloud sync
-* hosted collector
-* auth
-* full harness-level TraceForge behavior
+- Continue local-first.
+- Continue deterministic-first for rule logic.
+- Do not add framework adapters yet.
+- Do not start Docker, CLI, or PyPI until a later packaging milestone.
+- Do not add agent/tool/memory spans in the current milestone.
+- Do not make LLM-as-judge the default diagnostic path.
+- The real LLM demo should test RAGLens as an observer of a realistic RAG flow, not turn RAGLens into a RAG framework.
 
 ## Future Agent Harness Observability Direction
 
-Future possible TraceForge direction (not implemented in current RAGLens):
+Future possible TraceForge direction, not implemented in current RAGLens:
 
-* running traces for multi-step agent/harness executions
-* partial span ingestion for long-running/interrupted runs
-* additional span types such as `agent`, `tool`, and `retry`
-* diagnostics for agent loops, oscillation, retry storms, and no-progress execution
+- running traces for multi-step agent/harness executions
+- partial span ingestion for long-running or interrupted runs
+- additional span types such as agent, tool, and retry
+- diagnostics for agent loops
+- diagnostics for oscillation between states/actions
+- diagnostics for retry storms
+- diagnostics for no-progress execution
+
+Important scope note:
+
+- none of the above is implemented in current RAGLens
+- this direction is future-only and should not be claimed as current capability
