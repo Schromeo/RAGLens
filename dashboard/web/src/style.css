@@ -450,6 +450,21 @@ button {
   - Keep the span detail column from collapsing into unreadable slivers.
   - Switch to single column earlier on medium screens.
 */
+
+.span-header-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.span-duration {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .detail-grid {
   margin-top: 16px;
   display: grid;

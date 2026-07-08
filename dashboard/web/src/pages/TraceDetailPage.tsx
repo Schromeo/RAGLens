@@ -3,11 +3,192 @@ import { fetchTraceDetail } from "../api/client";
 import ChunkCard from "../components/ChunkCard";
 import JsonViewer from "../components/JsonViewer";
 import SpanTimeline from "../components/SpanTimeline";
-import type { Chunk, EvidenceItem, Span, TraceDetailResponse, Warning } from "../types";
+import type {
+  Chunk,
+  EvidenceItem,
+  Span,
+  TraceDetailResponse,
+  Warning,
+} from "../types";
 
 type Props = {
   traceId: string;
 };
+
+function parseTimestampMs(value: any): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    // Heuristic:
+    // - seconds timestamp: 10 digits-ish
+    // - milliseconds timestamp: 13 digits-ish
+    if (value > 0 && value < 10_000_000_000) {
+      return value * 1000;
+    }
+
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const trimmed = value.trim();
+
+    const numeric = Number(trimmed);
+    if (Number.isFinite(numeric)) {
+      if (numeric > 0 && numeric < 10_000_000_000) {
+        return numeric * 1000;
+      }
+
+      return numeric;
+    }
+
+    const parsed = Date.parse(trimmed);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function parseDurationMs(value: any): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function getSpanDurationMs(span: any): number | null {
+  const directCandidates = [
+    span.duration_ms,
+    span.durationMs,
+    span.duration,
+    span.latency_ms,
+    span.latencyMs,
+    span.metadata?.duration_ms,
+    span.metadata?.durationMs,
+    span.metadata?.latency_ms,
+    span.metadata?.latencyMs,
+  ];
+
+  for (const value of directCandidates) {
+    const parsed = parseDurationMs(value);
+
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  const startCandidates = [
+    span.start_time,
+    span.startTime,
+    span.started_at,
+    span.startedAt,
+    span.start,
+    span.metadata?.start_time,
+    span.metadata?.startTime,
+    span.metadata?.started_at,
+    span.metadata?.startedAt,
+    span.metadata?.start,
+  ];
+
+  const endCandidates = [
+    span.end_time,
+    span.endTime,
+    span.ended_at,
+    span.endedAt,
+    span.end,
+    span.finish_time,
+    span.finishTime,
+    span.finished_at,
+    span.finishedAt,
+    span.metadata?.end_time,
+    span.metadata?.endTime,
+    span.metadata?.ended_at,
+    span.metadata?.endedAt,
+    span.metadata?.end,
+    span.metadata?.finish_time,
+    span.metadata?.finishTime,
+    span.metadata?.finished_at,
+    span.metadata?.finishedAt,
+  ];
+
+  for (const startValue of startCandidates) {
+    const startMs = parseTimestampMs(startValue);
+
+    if (startMs === null) {
+      continue;
+    }
+
+    for (const endValue of endCandidates) {
+      const endMs = parseTimestampMs(endValue);
+
+      if (endMs === null) {
+        continue;
+      }
+
+      const durationMs = endMs - startMs;
+
+      if (Number.isFinite(durationMs) && durationMs >= 0) {
+        return durationMs;
+      }
+    }
+  }
+
+  return null;
+}
+
+function formatDurationMs(durationMs: number | null): string {
+  if (durationMs === null) {
+    return "—";
+  }
+
+  if (durationMs < 1000) {
+    return `${Math.round(durationMs)}ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(2)}s`;
+}
+
+function formatDuration(span: any): string {
+  return formatDurationMs(getSpanDurationMs(span));
+}
+
+function getTraceDurationMs(detail: TraceDetailResponse): number | null {
+  const traceDuration = getSpanDurationMs(detail.trace);
+
+  if (traceDuration !== null) {
+    return traceDuration;
+  }
+
+  const spanDurations = detail.spans
+    .map((span) => getSpanDurationMs(span))
+    .filter((duration): duration is number => duration !== null);
+
+  if (spanDurations.length === 0) {
+    return null;
+  }
+
+  return spanDurations.reduce((sum, duration) => sum + duration, 0);
+}
+
+function formatTraceDuration(detail: TraceDetailResponse): string {
+  return formatDurationMs(getTraceDurationMs(detail));
+}
 
 export default function TraceDetailPage({ traceId }: Props) {
   const [detail, setDetail] = useState<TraceDetailResponse | null>(null);
@@ -43,6 +224,7 @@ export default function TraceDetailPage({ traceId }: Props) {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     void loadDetail();
   }, [traceId]);
@@ -112,7 +294,7 @@ export default function TraceDetailPage({ traceId }: Props) {
         <div className="summary-card">
           <div className="summary-label">Duration</div>
           <div className="summary-value summary-value-duration">
-            {detail.trace.duration_ms ?? "unknown"}ms
+            {formatTraceDuration(detail)}
           </div>
         </div>
 
@@ -144,15 +326,20 @@ export default function TraceDetailPage({ traceId }: Props) {
                 <div key={warning.warning_id} className="warning-card">
                   <div className="warning-card-header">
                     <strong>{getWarningTitle(warning)}</strong>
-                    <span className="warning-severity">{warning.severity}</span>
+                    <span className="warning-severity">
+                      {warning.severity}
+                    </span>
                   </div>
 
                   {hasEnhancedWarning(warning) ? (
                     <>
                       <div className="warning-meta-row">
                         {warning.category ? (
-                          <span className="warning-meta-badge">{warning.category}</span>
+                          <span className="warning-meta-badge">
+                            {warning.category}
+                          </span>
                         ) : null}
+
                         {hasNumericConfidence(warning.confidence) ? (
                           <span className="warning-meta-badge warning-meta-badge-secondary">
                             {formatConfidence(warning.confidence)}
@@ -167,11 +354,14 @@ export default function TraceDetailPage({ traceId }: Props) {
                       {renderEvidencePreview(warning.evidence ?? [])}
 
                       <div className="warning-recommendation">
-                        <div className="warning-section-label">Recommended action</div>
+                        <div className="warning-section-label">
+                          Recommended action
+                        </div>
                         <div className="warning-help">
-                          {warning.recommended_action || getWarningHelpText(warning.type)}
+                          {warning.recommended_action ||
+                            getWarningHelpText(warning.type)}
+                        </div>
                       </div>
-</div>
                     </>
                   ) : (
                     <>
@@ -205,71 +395,74 @@ function SelectedSpanView({ span }: { span: Span }) {
 
   return (
     <div>
-        <div className="span-detail-header">
-          <div>
-            <div className="eyebrow">{span.type} span</div>
-            <h3>{span.name}</h3>
-          </div>
-
-          <div className={`big-status ${span.status}`}>{span.status}</div>
+      <div className="span-detail-header">
+        <div>
+          <div className="eyebrow">{span.type} span</div>
+          <h3>{span.name}</h3>
         </div>
 
-        {span.type === "retrieval" && (
-          <section className="section">
-            <h4>Retrieved chunks</h4>
+        <div className="span-header-meta">
+          <div className={`big-status ${span.status}`}>{span.status}</div>
+          <div className="span-duration">{formatDuration(span)}</div>
+        </div>
+      </div>
 
-            {chunks.length === 0 ? (
-              <div className="empty-card compact">No chunks recorded.</div>
-            ) : (
-              <div className="chunk-list">
-                {chunks.map((chunk, index) => (
-                  <ChunkCard
-                    key={chunk.id ?? `${span.span_id}-chunk-${index}`}
-                    chunk={chunk}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {span.type === "llm" && (
-          <section className="section">
-            <h4>LLM call</h4>
-
-            <div className="llm-box">
-              <div className="summary-label">Model</div>
-              <div>{getString(span.input, "model") || "Unknown model"}</div>
-            </div>
-
-            <div className="llm-box">
-              <div className="summary-label">Prompt</div>
-              <pre>{getString(span.input, "prompt") || "No prompt recorded"}</pre>
-            </div>
-
-            <div className="llm-box">
-              <div className="summary-label">Response</div>
-              <pre>
-                {getString(span.output, "response") || "No response recorded"}
-              </pre>
-            </div>
-          </section>
-        )}
-
+      {span.type === "retrieval" && (
         <section className="section">
-          <h4>Input</h4>
-          <JsonViewer value={span.input} />
-        </section>
+          <h4>Retrieved chunks</h4>
 
-        <section className="section">
-          <h4>Output</h4>
-          <JsonViewer value={span.output} />
+          {chunks.length === 0 ? (
+            <div className="empty-card compact">No chunks recorded.</div>
+          ) : (
+            <div className="chunk-list">
+              {chunks.map((chunk, index) => (
+                <ChunkCard
+                  key={chunk.id ?? `${span.span_id}-chunk-${index}`}
+                  chunk={chunk}
+                />
+              ))}
+            </div>
+          )}
         </section>
+      )}
 
+      {span.type === "llm" && (
         <section className="section">
-          <h4>Metadata</h4>
-          <JsonViewer value={span.metadata} />
+          <h4>LLM call</h4>
+
+          <div className="llm-box">
+            <div className="summary-label">Model</div>
+            <div>{getString(span.input, "model") || "Unknown model"}</div>
+          </div>
+
+          <div className="llm-box">
+            <div className="summary-label">Prompt</div>
+            <pre>{getString(span.input, "prompt") || "No prompt recorded"}</pre>
+          </div>
+
+          <div className="llm-box">
+            <div className="summary-label">Response</div>
+            <pre>
+              {getString(span.output, "response") || "No response recorded"}
+            </pre>
+          </div>
         </section>
+      )}
+
+      <section className="section">
+        <h4>Input</h4>
+        <JsonViewer value={span.input} />
+      </section>
+
+      <section className="section">
+        <h4>Output</h4>
+        <JsonViewer value={span.output} />
+      </section>
+
+      <section className="section">
+        <h4>Metadata</h4>
+        <JsonViewer value={span.metadata} />
+      </section>
     </div>
   );
 }
