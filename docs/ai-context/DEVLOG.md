@@ -1,5 +1,62 @@
 # Devlog
 
+## 2026-07-08 (v0.3.5 Diagnostic Quality Hardening Completed)
+
+### Completed
+
+- Added `sdk/python/examples/reference_rag_app/` as a thin deterministic-first reference integration app.
+- Added local policy corpus for reference integration validation under `sdk/python/examples/reference_rag_app/docs/`.
+- Completed mixed raw retrieval output normalization flow with `normalize_chunks()` in the reference app.
+- Added optional real LLM validation path while keeping deterministic-first default behavior.
+- Hardened warning engine numeric extraction to support natural-language ranges:
+  - `5 to 10 business days`
+  - `2 to 3 business days`
+  - `10 to 20 business days`
+  - `1 to 2 years`
+  - `24 to 48 hours`
+- Preserved prior deterministic numeric mismatch guardrails:
+  - no false-positive numeric mismatch for elapsed-time phrasing like `20 days ago`
+  - mismatch still fires for unsupported policy windows like `45 days` vs retrieved `30 days`
+  - mismatch suppression remains when answer numeric value is directly supported by at least one retrieved chunk
+- Hardened conflicting chunk candidate selection with deterministic relevance-aware ranking and query gating.
+- Added deterministic topic classifier for numeric expressions and topic gating in conflicting chunk selection.
+- Added/updated warning tests for:
+  - numeric range mismatch behavior
+  - matching-range non-mismatch behavior
+  - query-relevant conflicting chunk preference and noise suppression
+- Cleaned deterministic demo answers for `conflict`, `digital`, and `damaged` to reduce avoidable grounding-noise.
+
+### Validation
+
+Validated with:
+
+```bash
+cd collector/go
+go test ./... -count=1
+
+cd sdk/python
+python -m examples.reference_rag_app.run processing-range
+python -m examples.reference_rag_app.run wrong-processing-range
+python -m examples.reference_rag_app.run all
+
+cd sdk/python
+python -m examples.real_llm_rag_demo all
+```
+
+Observed results:
+
+- collector warning-engine tests passed after numeric/range/conflict hardening updates
+- reference integration traces were generated and persisted successfully
+- wrong-window and wrong-processing-range still trigger `numeric_mismatch` as expected
+- weak case continues to trigger retrieval + grounding diagnostics
+- subscription case remains low-noise and typically warning-free
+
+### Notes
+
+- v0.3.5 is complete as a deterministic warning-quality and integration-hardening slice.
+- warning generation remains collector-side and deterministic-first.
+- no storage schema, dashboard schema, or SDK trace API changes were required for this hardening pass.
+
 ## 2026-07-06 (v0.3 Backend Test Coverage Added)
 
 ### Completed

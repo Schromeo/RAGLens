@@ -1,8 +1,8 @@
 # Warning Rules
 
-This document describes the current v0.1 warning rules used by the RAGLens local demo.
+This document describes the current deterministic warning rules used by local RAGLens demos.
 
-The warning engine is intentionally simple in v0.1.
+The warning engine remains deterministic-first and local-first.
 The goal is to make common RAG failure modes visible during local development, not to provide a complete factuality or evaluation system.
 
 Related docs:
@@ -17,8 +17,10 @@ Related docs:
 | `no_retrieved_chunks` | The retriever returned no usable chunks | `no_match` |
 | `low_retrieval_score` | Retrieved chunks have weak relevance scores | `low_score` |
 | `duplicate_chunks` | Retrieved chunks contain duplicated text | `duplicate` |
+| `weak_query_chunk_overlap` | Top retrieved chunks weakly overlap important query terms | `weak-overlap` |
 | `conflicting_chunks` | Retrieved chunks contain conflicting policy signals | `conflict` |
-| `answer_not_grounded` | The answer contains an unsupported numeric day-count claim | `hallucinated` |
+| `numeric_mismatch` | Answer numeric value conflicts with retrieved numeric value in similar local context | `numeric-mismatch` |
+| `answer_not_grounded` | The answer contains a claim that is weakly supported by retrieved chunks | `hallucinated` |
 
 ## `no_retrieved_chunks`
 
@@ -58,7 +60,14 @@ duplicate
 
 ## `conflicting_chunks`
 
-This warning fires when retrieved chunks contain conflicting policy information.
+This warning fires when retrieved chunks contain conflicting numeric information.
+
+Current behavior uses deterministic relevance-aware candidate selection.
+
+- conflict candidates require same unit and different value
+- local context overlap is required
+- query/answer overlap is used to prioritize relevant conflicts
+- cross-topic numeric conflicts are suppressed by deterministic topic gating
 
 In the local demo, this is shown with refund policy chunks that mention different return windows.
 
@@ -70,9 +79,13 @@ conflict
 
 ## `answer_not_grounded`
 
-This is a simplified v0.1 grounding rule.
+This rule is deterministic and evidence-backed in current versions.
 
-It currently detects unsupported numeric day-count claims. For example, if the retrieved context says shipping usually takes 5 to 7 business days, but the generated answer says 45 days, the warning can fire.
+It detects answer claims that are weakly supported by retrieved chunks based on lexical support strength.
+
+Numeric disagreements with stronger local overlap may also surface as `numeric_mismatch`.
+
+The weak demo case intentionally keeps an unsupported invented claim so this rule remains visible in smoke tests.
 
 Demo case:
 

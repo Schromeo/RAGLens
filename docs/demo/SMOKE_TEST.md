@@ -1,6 +1,6 @@
 # Smoke Test
 
-This document describes the manual smoke test for the RAGLens local-first v0.1 demo.
+This document describes the manual smoke test for the RAGLens local-first deterministic demo flows.
 
 The goal is to verify that the core local tracing loop still works:
 
@@ -136,6 +136,34 @@ Expected warning types:
 - `conflicting_chunks`
 - `answer_not_grounded`
 
+## Step 3.5: Run the v0.3.5 reference integration demo
+
+From `sdk/python`:
+
+```bash
+python -m examples.reference_rag_app.run all
+python -m examples.reference_rag_app.run processing-range
+python -m examples.reference_rag_app.run wrong-processing-range
+```
+
+Expected result:
+
+```txt
+Reference integration traces are generated and sent to the collector.
+```
+
+Expected traces include:
+
+- `reference-rag-app-refund`
+- `reference-rag-app-conflict`
+- `reference-rag-app-wrong-window`
+- `reference-rag-app-processing-range`
+- `reference-rag-app-wrong-processing-range`
+- `reference-rag-app-damaged`
+- `reference-rag-app-digital`
+- `reference-rag-app-subscription`
+- `reference-rag-app-weak`
+
 ## Step 4: Run the local RAG trace demo
 
 From `sdk/python`:
@@ -207,6 +235,7 @@ The smoke test passes if:
 - retrieved chunks are visible
 - warning cards are visible
 - expected warning types are generated
+- reference integration traces are generated and inspectable
 
 ## Acceptance Table
 
@@ -214,6 +243,7 @@ The smoke test passes if:
 Collector health: pass / fail
 Dashboard starts: pass / fail
 trace-all runs: pass / fail
+reference-rag-app runs: pass / fail
 no_match warning: pass / fail
 low_score warning: pass / fail
 duplicate warning: pass / fail

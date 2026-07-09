@@ -6,7 +6,7 @@ RAGLens v0.1 is complete and smoke-tested.
 
 RAGLens v0.2 Developer Integration / Local SDK Onboarding is complete, documented, and smoke-tested.
 
-RAGLens v0.3 Diagnostic Intelligence core is now implemented and smoke-tested.
+RAGLens v0.3.5 Diagnostic Quality hardening is now implemented and smoke-tested.
 
 The project now has:
 
@@ -20,13 +20,13 @@ The project now has:
 
 ## Current Goal
 
-Document the completed v0.3 diagnostic intelligence core and prepare the next follow-up slice.
+Close out v0.3.5 documentation and handoff with a verified deterministic reference-integration flow.
 
 Current focus:
 
-- finalize v0.3 implementation documentation
-- capture smoke-tested validation status
-- identify the next narrow follow-up after the core milestone
+- finalize v0.3.5 implementation and validation documentation
+- capture deterministic warning-quality hardening outcomes
+- prepare a clean handoff into the next milestone planning slice
 
 ## Current System Status
 
@@ -58,7 +58,16 @@ Completed so far:
   - `conflicting_chunks` with evidence-backed v2 details
   - `answer_not_grounded` with evidence-backed v2 details
   - `numeric_mismatch`
+- v0.3.5 warning-quality hardening implemented:
+  - numeric range extraction supports both hyphen and natural-language `to` ranges
+  - conflicting chunk selection is relevance-aware (query/answer overlap aware)
+  - conflicting chunk topic gating reduces cross-topic numeric noise
+  - deterministic classifier metadata added to conflicting chunk diagnostics (`left_topic`, `right_topic`)
 - Real Local RAG Demo completed and verified
+- Thin reference integration app completed and verified:
+  - `sdk/python/examples/reference_rag_app/run.py`
+  - mixed raw retrieval output normalization through `normalize_chunks()`
+  - deterministic + optional real LLM answer modes
 - `docs/product/USER_ONBOARDING.md` completed
 - `docs/integrations/PYTHON_SDK_GUIDE.md` completed
 - `sdk/python/examples/custom_pipeline_demo.py` added
@@ -87,9 +96,9 @@ React Dashboard
 
 ## Current Milestone
 
-v0.3 RAG Quality Analysis / Diagnostic Intelligence.
+v0.3.5 Diagnostic Quality hardening and reference integration validation.
 
-Status: core implemented and smoke-tested.
+Status: implemented and smoke-tested.
 
 ## Smoke-Tested Validation
 
@@ -107,6 +116,10 @@ cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
 python -m examples.diagnostic_quality_demo all
+python -m examples.real_llm_rag_demo all
+python -m examples.reference_rag_app.run all
+python -m examples.reference_rag_app.run processing-range
+python -m examples.reference_rag_app.run wrong-processing-range
 ```
 
 Additional backend test coverage added:
@@ -131,19 +144,35 @@ Verified in dashboard:
 - evidence-backed warning detail sections
 - numeric mismatch value-diff block
 - recommended action label in warning detail cards
+- reference app traces for realistic integration flow:
+  - `reference-rag-app-refund`
+  - `reference-rag-app-conflict`
+  - `reference-rag-app-wrong-window`
+  - `reference-rag-app-processing-range`
+  - `reference-rag-app-wrong-processing-range`
+  - `reference-rag-app-damaged`
+  - `reference-rag-app-digital`
+  - `reference-rag-app-subscription`
+  - `reference-rag-app-weak`
 
 Milestone status:
 
 - v0.1 completed and smoke-tested
 - v0.2 completed and smoke-tested
 - v0.3 diagnostic intelligence core completed and smoke-tested
+- v0.3.5 diagnostic quality hardening completed and smoke-tested
 
 ## Files Recently Updated
 
 - `collector/go/internal/warnings/engine.go` - v0.3 evidence-backed diagnostics and rule logic
+- `collector/go/internal/warnings/engine.go` - v0.3.5 deterministic warning-quality hardening (range handling, relevance-aware conflict selection, topic gating)
+- `collector/go/internal/warnings/engine_test.go` - v0.3.5 warning-quality regression tests
 - `dashboard/web/src/pages/TraceDetailPage.tsx` - evidence-backed warning rendering and recommended action label
 - `dashboard/web/src/style.css` - warning detail and responsive layout polish
 - `sdk/python/examples/diagnostic_quality_demo.py` - deterministic v0.3 diagnostic demo cases
+- `sdk/python/examples/real_llm_rag_demo.py` - optional real LLM validation flow
+- `sdk/python/examples/reference_rag_app/run.py` - thin reference integration app with mixed retrieval output normalization
+- `sdk/python/examples/reference_rag_app/docs/` - local policy corpus for deterministic integration validation
 - `docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md` - v0.3 scope and diagnostic intelligence design spec
 - `README.md` - two-path v0.2 quickstart for built-in demo and real SDK integration
 - `docs/product/USER_ONBOARDING.md` - developer onboarding flow for existing RAG apps
@@ -206,15 +235,15 @@ Still not implemented:
 
 ## Next Task
 
-Choose the next narrow follow-up after the completed v0.3 diagnostic intelligence core.
+Choose the next narrow follow-up after the completed v0.3.5 diagnostic-quality hardening slice.
 
 Recommended next options:
 
-1. v0.3 polish: improve warning grouping / suppression when multiple related diagnostics fire on one trace.
-2. v0.3 polish: improve dashboard diagnostic detail views for signals, evidence, and compared values.
-3. v0.3 hardening: add focused Go tests for warning rules.
-4. v0.3 hardening: add more diagnostic demo cases and acceptance snapshots.
-5. Future milestone planning: decide whether v0.4 should focus on tests/hardening, local packaging, or integration adapters.
+1. v0.4 planning: package and distribution path (Docker/CLI/PyPI) with deterministic local defaults preserved.
+2. v0.4 planning: adapter strategy for external frameworks (LangChain/LlamaIndex) without changing trace contracts.
+3. v0.4 hardening: acceptance snapshots for warning outputs across reference demo traces.
+4. v0.4 UX: richer diagnostics exploration for signals/evidence while keeping warning generation server-side deterministic.
+5. Future planning: agent/tool/retry observability direction remains explicitly out of current scope.
 
 Guardrail:
 

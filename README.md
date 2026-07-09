@@ -63,6 +63,8 @@ Current warning rules:
 * `no_retrieved_chunks`
 * `low_retrieval_score`
 * `duplicate_chunks`
+* `weak_query_chunk_overlap`
+* `numeric_mismatch`
 * `conflicting_chunks`
 * `answer_not_grounded`
 
@@ -121,6 +123,15 @@ python -m examples.local_rag_demo.run_demo trace-all
 ```
 
 This validates the local RAG debugging stack and sends representative traces to the local collector.
+
+Optional v0.3.5 reference integration traces:
+
+```bash
+cd sdk/python
+python -m examples.reference_rag_app.run all
+```
+
+This validates mixed retrieval output normalization and warning-quality behavior on a thin reference app flow.
 
 ### Path B: Use RAGLens with your own RAG app
 

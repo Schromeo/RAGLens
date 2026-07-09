@@ -14,6 +14,30 @@ The design remains local-first and deterministic-first.
 
 As of 2026-07-06, the v0.3 diagnostic intelligence core is implemented and smoke-tested.
 
+As of 2026-07-08, v0.3.5 diagnostic-quality hardening is also implemented and smoke-tested.
+
+Completed in v0.3.5:
+
+- warning-engine numeric range extraction supports both hyphen and natural-language range forms
+- conflicting chunk selection is relevance-aware and query-gated
+- deterministic numeric-expression topic classifier reduces cross-topic conflict noise
+- warning-engine regression coverage expanded for range and relevance behavior
+- thin reference integration app (`sdk/python/examples/reference_rag_app/`) validates mixed raw retrieval-shape normalization
+- deterministic demo-answer cleanup reduces avoidable grounding-noise while preserving weak-case true positives
+
+Validated with:
+
+```bash
+cd collector/go
+go test ./... -count=1
+
+cd sdk/python
+python -m examples.reference_rag_app.run all
+python -m examples.reference_rag_app.run processing-range
+python -m examples.reference_rag_app.run wrong-processing-range
+python -m examples.real_llm_rag_demo all
+```
+
 Completed in code:
 
 - Warning Schema v2 default enrichment in the collector

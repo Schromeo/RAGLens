@@ -75,15 +75,24 @@ Existing warning rules retained:
 
 ### v0.3 Hardening Status
 
-**v0.3 backend hardening is underway and core backend tests now pass.**
+**v0.3.5 diagnostic-quality hardening is complete and smoke-tested.**
 
-Added backend tests for:
+Added backend tests and hardening coverage for:
 
 - warning engine unit tests
 - SQLite Warning Schema v2 round-trip persistence
 - legacy warning table migration for v2 columns
 - API handler coverage for v0.3 warning generation
 - API trace detail response coverage for v2 warning fields
+- numeric range extraction behavior (`5-10` and `5 to 10` forms)
+- relevance-aware conflicting chunk selection and query gating
+- deterministic numeric-expression topic gating for conflicts
+
+Added reference integration validation assets:
+
+- `sdk/python/examples/reference_rag_app/run.py`
+- `sdk/python/examples/reference_rag_app/docs/*.md`
+- mixed retrieval raw-shape normalization flow through `normalize_chunks()`
 
 Current backend test coverage verifies:
 
@@ -92,6 +101,9 @@ Current backend test coverage verifies:
 - legacy warning tables can be migrated with v2 columns
 - `POST /api/traces` generates v0.3 warnings
 - `GET /api/traces/{trace_id}` returns dashboard-consumable v2 warning fields
+- wrong policy-window mismatch still fires (`45 days` vs retrieved `30 days`)
+- processing-range mismatch still fires (`2 business days` vs retrieved `5-10 business days`)
+- elapsed-time answer phrasing remains protected from false-positive numeric mismatch
 
 ## Current Implemented Flow
 
@@ -119,7 +131,7 @@ React Dashboard
 
 ## Exact Commands That Passed
 
-Validated v0.2 / v0.3 runtime commands:
+Validated v0.2 / v0.3 / v0.3.5 runtime commands:
 
 ```bash
 python scripts/start-raglens.py
@@ -128,6 +140,10 @@ cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
 python -m examples.diagnostic_quality_demo all
+python -m examples.real_llm_rag_demo all
+python -m examples.reference_rag_app.run all
+python -m examples.reference_rag_app.run processing-range
+python -m examples.reference_rag_app.run wrong-processing-range
 ```
 
 Validated backend tests:
@@ -152,6 +168,7 @@ npm run build
 - warning detail cards showed evidence-backed sections
 - numeric mismatch showed compared value diff block
 - recommended action label appeared in warning cards
+- reference integration traces were visible and inspectable (`reference-rag-app-*`)
 
 ## Current Implemented Span Types
 
@@ -190,6 +207,8 @@ Important current state:
 - numeric_mismatch detects answer numeric values that conflict with retrieved chunk values.
 - weak_query_chunk_overlap detects low lexical overlap between the query and top retrieved chunks.
 - RAGLens still does not use LLM-as-judge by default.
+- conflicting chunk selection is relevance-aware and topic-gated in v0.3.5.
+- numeric extraction supports natural-language ranges (for example `5 to 10 business days`).
 
 ## Current v0.3 Diagnostic Demo Cases
 
@@ -217,11 +236,23 @@ python -m examples.diagnostic_quality_demo all
 Core v0.3 implementation files:
 
 - collector/go/internal/warnings/engine.go
+- collector/go/internal/warnings/engine_test.go
 - collector/go/internal/storage/sqlite.go
 - collector/go/internal/models/models.go
 - dashboard/web/src/pages/TraceDetailPage.tsx
 - dashboard/web/src/style.css
 - sdk/python/examples/diagnostic_quality_demo.py
+- sdk/python/examples/real_llm_rag_demo.py
+- sdk/python/examples/reference_rag_app/__init__.py
+- sdk/python/examples/reference_rag_app/run.py
+- sdk/python/examples/reference_rag_app/docs/refund_policy_current.md
+- sdk/python/examples/reference_rag_app/docs/refund_policy_legacy.md
+- sdk/python/examples/reference_rag_app/docs/returns_process.md
+- sdk/python/examples/reference_rag_app/docs/shipping_policy.md
+- sdk/python/examples/reference_rag_app/docs/warranty_policy.md
+- sdk/python/examples/reference_rag_app/docs/subscription_policy.md
+- sdk/python/examples/reference_rag_app/docs/damaged_items_policy.md
+- sdk/python/examples/reference_rag_app/docs/digital_goods_policy.md
 
 Backend test files added:
 
@@ -288,19 +319,19 @@ RAGLens is not:
 
 ## Recommended Next Milestone
 
-Recommended next step: v0.3.5 — Real LLM RAG Demo
+Recommended next step: v0.4 — Packaging and External Developer Experience
 
-The next step should not be v0.4 yet.
+The v0.3.5 hardening scope is complete.
 
 Recommended version naming:
 
 - v0.3: Diagnostic Intelligence core
-- v0.3.5: hardening + real LLM validation demo
+- v0.3.5: deterministic warning-quality hardening + reference integration validation
 - v0.4: packaging / distribution / external developer experience
 
-Recommended v0.3.5 goal:
+Recommended v0.4 goal:
 
-Validate RAGLens against a more realistic development workflow using a real LLM while keeping retrieval local and deterministic.
+Make local-first RAGLens easier to adopt outside this repository while preserving deterministic diagnostics and current trace contracts.
 
 Suggested new demo:
 
@@ -327,7 +358,7 @@ Why this is next:
 - the next important validation is whether RAGLens helps debug real model behavior
 - real LLM demo should come before packaging, Docker, CLI, or PyPI
 
-## Suggested v0.3.5 Scope
+## Suggested v0.4 Scope
 
 In scope:
 

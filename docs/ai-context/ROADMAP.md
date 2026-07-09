@@ -6,8 +6,8 @@ Each version includes clear scope boundaries so RAGLens stays local-first, light
 
 ## Current Snapshot
 
-**Current version:** v0.3 — RAG Quality Analysis / Diagnostic Intelligence  
-**Status:** Core implemented and smoke-tested
+**Current version:** v0.3.5 — Diagnostic Quality Hardening  
+**Status:** Completed and smoke-tested
 
 RAGLens has completed the local inspection loop for both the built-in demo and user-owned Python RAG pipelines, and is now upgrading the warning layer into evidence-backed diagnostics:
 
@@ -36,6 +36,14 @@ Current warning rules:
 * `answer_not_grounded`
 * `numeric_mismatch`
 
+Current v0.3.5 hardening highlights:
+
+* numeric expression range handling supports both hyphen and natural-language ranges
+* conflicting chunk selection is query/answer relevance-aware and deterministic
+* conflicting chunk topic gating reduces cross-topic numeric noise
+* thin reference integration app validates mixed raw retrieval output normalization
+* deterministic-first behavior retained, with optional real LLM validation path
+
 Completed foundation highlights:
 
 * `docs/product/USER_ONBOARDING.md`
@@ -49,6 +57,7 @@ Completed foundation highlights:
 * v0.3 diagnostic intelligence design spec in `docs/product/V0_3_DIAGNOSTIC_INTELLIGENCE.md`
 * v0.3 diagnostic quality demo cases for numeric mismatch, weak overlap, unsupported claim, and conflicting chunks
 * evidence-backed warning detail UI with compared-value and recommended-action blocks
+* v0.3.5 reference integration app and policy corpus under `sdk/python/examples/reference_rag_app/`
 
 ---
 
@@ -265,6 +274,46 @@ Not part of this milestone:
 * hosted collector
 
 These remain intentionally outside the v0.3 local-first deterministic-first path.
+
+---
+
+## v0.3.5 — Diagnostic Quality Hardening
+
+**Status:** Done
+
+### Goal
+
+Harden deterministic warning quality on realistic integration traces without introducing LLM-as-judge or changing core trace/storage contracts.
+
+### Scope
+
+* [x] natural-language numeric range extraction in warning engine
+* [x] conservative numeric mismatch behavior preserved for elapsed-time and directly-supported values
+* [x] relevance-aware conflicting chunk candidate selection
+* [x] deterministic topic classifier for numeric conflict candidate gating
+* [x] expanded warning-engine tests for range and relevance behavior
+* [x] thin reference RAG integration app with mixed raw retrieval output normalization
+* [x] deterministic answer cleanup for lower avoidable grounding-noise in demo traces
+
+### Validation
+
+```bash
+cd collector/go
+go test ./... -count=1
+
+cd sdk/python
+python -m examples.reference_rag_app.run all
+python -m examples.reference_rag_app.run processing-range
+python -m examples.reference_rag_app.run wrong-processing-range
+python -m examples.real_llm_rag_demo all
+```
+
+### Out of Scope
+
+* storage schema changes
+* dashboard UI/schema changes
+* SDK trace API changes
+* LLM-as-judge or non-deterministic warning evaluation
 
 ---
 
