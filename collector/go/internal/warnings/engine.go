@@ -714,7 +714,7 @@ func (e *Engine) detectWeakQueryChunkOverlap(payload models.TracePayload) []mode
 			Message:       message,
 			SchemaVersion: stringPtr("2"),
 			RuleID:        stringPtr(TypeWeakQueryChunkOverlap),
-			RuleVersion:   stringPtr("1"),
+			RuleVersion:   stringPtr("2"),
 			Title:         stringPtr("Retrieved chunks weakly match the query"),
 			Category:      stringPtr("retrieval"),
 			Confidence:    float64Ptr(0.75),
@@ -808,9 +808,16 @@ type chunkNumericFact struct {
 }
 
 type chunkConflictCandidate struct {
-	Left        chunkNumericFact
-	Right       chunkNumericFact
-	SharedTerms []string
+	Left               chunkNumericFact
+	Right              chunkNumericFact
+	LeftTopic          string
+	RightTopic         string
+	CandidateTopic     string
+	SharedTerms        []string
+	QueryMatchedTerms  []string
+	AnswerMatchedTerms []string
+	QueryIntentTopics  []string
+	RelevanceScore     float64
 }
 
 func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.Warning {
@@ -818,6 +825,15 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 	if len(chunks) < 2 {
 		return nil
 	}
+
+	query, _ := extractTraceQuery(payload)
+	query = strings.TrimSpace(query)
+	queryTerms := importantQueryTerms(query)
+	queryIntentTopics := textIntentTopics(query)
+
+	answer, _ := extractFinalAnswer(payload)
+	answer = strings.TrimSpace(answer)
+	answerTerms := importantContextTerms(answer)
 
 	facts := make([]chunkNumericFact, 0)
 
@@ -841,7 +857,7 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 		return nil
 	}
 
-	var best *chunkConflictCandidate
+	candidates := make([]chunkConflictCandidate, 0)
 
 	for i := 0; i < len(facts); i++ {
 		for j := i + 1; j < len(facts); j++ {
@@ -860,20 +876,83 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 				continue
 			}
 
+			leftTopic := numericExpressionTopic(left.Expression)
+			rightTopic := numericExpressionTopic(right.Expression)
+			if leftTopic != "" && rightTopic != "" && leftTopic != rightTopic {
+				continue
+			}
+
+			candidateTopic := mergeNumericExpressionTopics(leftTopic, rightTopic)
+			if len(queryIntentTopics) > 0 && candidateTopic != "" && !topicMatchesAnyIntent(candidateTopic, queryIntentTopics) {
+				continue
+			}
+
 			sharedTerms := sharedContextTerms(left.Expression.ContextTerms, right.Expression.ContextTerms)
 			if len(sharedTerms) == 0 {
 				continue
 			}
 
-			candidate := chunkConflictCandidate{
-				Left:        left,
-				Right:       right,
-				SharedTerms: sharedTerms,
+			conflictTerms := unionTerms(
+				sharedTerms,
+				left.Expression.ContextTerms,
+				right.Expression.ContextTerms,
+			)
+
+			queryMatchedTerms := sharedContextTerms(queryTerms, conflictTerms)
+			answerMatchedTerms := sharedContextTerms(answerTerms, conflictTerms)
+
+			relevanceScore := float64(len(queryMatchedTerms)*3 + len(answerMatchedTerms))
+			if len(queryMatchedTerms) > 0 {
+				relevanceScore += 1.0
 			}
 
-			if best == nil || isBetterChunkConflictCandidate(candidate, *best) {
-				best = &candidate
+			candidate := chunkConflictCandidate{
+				Left:               left,
+				Right:              right,
+				LeftTopic:          leftTopic,
+				RightTopic:         rightTopic,
+				CandidateTopic:     candidateTopic,
+				SharedTerms:        sharedTerms,
+				QueryMatchedTerms:  queryMatchedTerms,
+				AnswerMatchedTerms: answerMatchedTerms,
+				QueryIntentTopics:  queryIntentTopics,
+				RelevanceScore:     relevanceScore,
 			}
+
+			candidates = append(candidates, candidate)
+		}
+	}
+
+	if len(candidates) == 0 {
+		return nil
+	}
+
+	hasQueryRelevantCandidate := false
+	if len(queryTerms) > 0 {
+		for _, candidate := range candidates {
+			if len(candidate.QueryMatchedTerms) > 0 {
+				hasQueryRelevantCandidate = true
+				break
+			}
+		}
+
+		// Relevance guard:
+		// if query terms exist but none of the numeric conflicts overlap with the query,
+		// suppress conflicting_chunks to avoid unrelated numeric-noise warnings.
+		if !hasQueryRelevantCandidate {
+			return nil
+		}
+	}
+
+	var best *chunkConflictCandidate
+	for _, candidate := range candidates {
+		if hasQueryRelevantCandidate && len(candidate.QueryMatchedTerms) == 0 {
+			continue
+		}
+
+		if best == nil || isBetterChunkConflictCandidate(candidate, *best) {
+			selected := candidate
+			best = &selected
 		}
 	}
 
@@ -905,6 +984,7 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 				"value":            best.Left.Expression.Value,
 				"unit":             best.Left.Expression.Unit,
 				"normalized_value": best.Left.Expression.Normalized,
+				"topic":            best.LeftTopic,
 				"rank":             best.Left.ChunkRank,
 				"score":            nullableScore(best.Left.Chunk.Score),
 			},
@@ -922,6 +1002,7 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 				"value":            best.Right.Expression.Value,
 				"unit":             best.Right.Expression.Unit,
 				"normalized_value": best.Right.Expression.Normalized,
+				"topic":            best.RightTopic,
 				"rank":             best.Right.ChunkRank,
 				"score":            nullableScore(best.Right.Chunk.Score),
 			},
@@ -937,12 +1018,19 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 				rightValue,
 			),
 			Attributes: models.JSONMap{
-				"left_value":     leftValue,
-				"right_value":    rightValue,
-				"unit":           best.Left.Expression.Unit,
-				"left_chunk_id":  leftChunkID,
-				"right_chunk_id": rightChunkID,
-				"shared_terms":   best.SharedTerms,
+				"left_value":           leftValue,
+				"right_value":          rightValue,
+				"left_topic":           best.LeftTopic,
+				"right_topic":          best.RightTopic,
+				"candidate_topic":      best.CandidateTopic,
+				"unit":                 best.Left.Expression.Unit,
+				"left_chunk_id":        leftChunkID,
+				"right_chunk_id":       rightChunkID,
+				"shared_terms":         best.SharedTerms,
+				"query_matched_terms":  best.QueryMatchedTerms,
+				"answer_matched_terms": best.AnswerMatchedTerms,
+				"query_intent_topics":  best.QueryIntentTopics,
+				"relevance_score":      best.RelevanceScore,
 			},
 			DiagnosticObjectIDs: []string{conflictDiagnosticID},
 		},
@@ -992,9 +1080,16 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 				"unit":   best.Left.Expression.Unit,
 			},
 			Attributes: models.JSONMap{
-				"left_chunk_id":  leftChunkID,
-				"right_chunk_id": rightChunkID,
-				"shared_terms":   best.SharedTerms,
+				"left_chunk_id":        leftChunkID,
+				"right_chunk_id":       rightChunkID,
+				"left_topic":           best.LeftTopic,
+				"right_topic":          best.RightTopic,
+				"candidate_topic":      best.CandidateTopic,
+				"shared_terms":         best.SharedTerms,
+				"query_matched_terms":  best.QueryMatchedTerms,
+				"answer_matched_terms": best.AnswerMatchedTerms,
+				"query_intent_topics":  best.QueryIntentTopics,
+				"relevance_score":      best.RelevanceScore,
 			},
 		},
 	}
@@ -1017,6 +1112,20 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 			Strength:   "moderate",
 			Attributes: models.JSONMap{
 				"shared_terms": best.SharedTerms,
+			},
+		},
+		{
+			SignalID:   "conflict_relevant_to_query",
+			Label:      "Selected conflict is relevant to query terms",
+			Observed:   len(best.QueryMatchedTerms),
+			Expected:   "> 0 when query terms are available",
+			Comparator: "query_overlap_count",
+			Strength:   "moderate",
+			Attributes: models.JSONMap{
+				"query_matched_terms":  best.QueryMatchedTerms,
+				"answer_matched_terms": best.AnswerMatchedTerms,
+				"query_intent_topics":  best.QueryIntentTopics,
+				"relevance_score":      best.RelevanceScore,
 			},
 		},
 	}
@@ -1045,14 +1154,21 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 				"RAGLens found two retrieved chunks that state different numeric values in similar local context.",
 			),
 			Details: models.JSONMap{
-				"rule":            TypeConflictingChunks,
-				"left_value":      leftValue,
-				"right_value":     rightValue,
-				"detected_values": []string{leftValue, rightValue},
-				"left_chunk_id":   leftChunkID,
-				"right_chunk_id":  rightChunkID,
-				"shared_terms":    best.SharedTerms,
-				"reason":          "retrieved chunks contain different numeric values in similar local context",
+				"rule":                 TypeConflictingChunks,
+				"left_value":           leftValue,
+				"right_value":          rightValue,
+				"left_topic":           best.LeftTopic,
+				"right_topic":          best.RightTopic,
+				"candidate_topic":      best.CandidateTopic,
+				"detected_values":      []string{leftValue, rightValue},
+				"left_chunk_id":        leftChunkID,
+				"right_chunk_id":       rightChunkID,
+				"shared_terms":         best.SharedTerms,
+				"query_matched_terms":  best.QueryMatchedTerms,
+				"answer_matched_terms": best.AnswerMatchedTerms,
+				"query_intent_topics":  best.QueryIntentTopics,
+				"relevance_score":      best.RelevanceScore,
+				"reason":               "retrieved chunks contain different numeric values in similar local context",
 			},
 			Evidence:          evidence,
 			Diagnostics:       diagnostics,
@@ -1064,6 +1180,14 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 }
 
 func isBetterChunkConflictCandidate(candidate chunkConflictCandidate, current chunkConflictCandidate) bool {
+	if candidate.RelevanceScore != current.RelevanceScore {
+		return candidate.RelevanceScore > current.RelevanceScore
+	}
+
+	if len(candidate.QueryMatchedTerms) != len(current.QueryMatchedTerms) {
+		return len(candidate.QueryMatchedTerms) > len(current.QueryMatchedTerms)
+	}
+
 	if len(candidate.SharedTerms) != len(current.SharedTerms) {
 		return len(candidate.SharedTerms) > len(current.SharedTerms)
 	}
@@ -1079,6 +1203,26 @@ func isBetterChunkConflictCandidate(candidate chunkConflictCandidate, current ch
 	currentRank := current.Left.ChunkRank + current.Right.ChunkRank
 
 	return candidateRank < currentRank
+}
+
+func unionTerms(termLists ...[]string) []string {
+	seen := map[string]bool{}
+	result := make([]string, 0)
+
+	for _, terms := range termLists {
+		for _, term := range terms {
+			if seen[term] {
+				continue
+			}
+
+			seen[term] = true
+			result = append(result, term)
+		}
+	}
+
+	sort.Strings(result)
+
+	return result
 }
 
 func combinedChunkScore(left *float64, right *float64) float64 {
@@ -1116,7 +1260,7 @@ type numericMismatchCandidate struct {
 	SharedTerms      []string
 }
 
-var numericExpressionRegex = regexp.MustCompile(`(?i)\b(\d{1,4})(?:\s*-\s*(\d{1,4}))?\s*(business\s+days?|days?|months?|years?|hours?|percent|%)\b`)
+var numericExpressionRegex = regexp.MustCompile(`(?i)\b(\d{1,4})(?:\s*(?:-\s*|to\s+)(\d{1,4}))?\s*(business\s+days?|days?|months?|years?|hours?|percent|%)\b`)
 
 func (e *Engine) detectNumericMismatch(payload models.TracePayload) []models.Warning {
 	answer, llmSpanID := extractFinalAnswer(payload)
@@ -1143,6 +1287,30 @@ func (e *Engine) detectNumericMismatch(payload models.TracePayload) []models.War
 	var best *numericMismatchCandidate
 
 	for _, answerExpression := range answerExpressions {
+		// Important false-positive guard:
+		// A value like "20 days ago" is usually user elapsed time, not a policy value.
+		// Example:
+		//   "A purchase from 20 days ago is still within the 30-day return window."
+		// The answer is comparing elapsed time to a policy limit, not claiming that
+		// the policy window is 20 days.
+		if isElapsedTimeAnswerExpression(answerExpression) {
+			continue
+		}
+
+		// Important conflict/noise guard:
+		// If the answer's numeric value is directly supported by at least one
+		// retrieved chunk, do not flag that same answer value as a mismatch merely
+		// because another retrieved chunk contains a conflicting legacy value.
+		//
+		// Example:
+		//   answer: current policy says 30 days
+		//   chunks: current policy says 30 days, legacy policy says 14 days
+		//
+		// That should be a conflicting_chunks warning, not numeric_mismatch.
+		if answerExpressionSupportedByRetrievedChunk(answerExpression, chunks) {
+			continue
+		}
+
 		for chunkIndex, chunk := range chunks {
 			chunkText := strings.TrimSpace(chunk.Text)
 			if chunkText == "" {
@@ -1164,7 +1332,7 @@ func (e *Engine) detectNumericMismatch(payload models.TracePayload) []models.War
 					chunkExpression.ContextTerms,
 				)
 
-				// Keep this first version intentionally conservative:
+				// Keep this deterministic rule conservative:
 				// same unit + different value + at least one shared local context term.
 				if len(sharedTerms) == 0 {
 					continue
@@ -1311,7 +1479,7 @@ func (e *Engine) detectNumericMismatch(payload models.TracePayload) []models.War
 			Message:       fmt.Sprintf("Answer says %s, but retrieved context says %s.", answerValue, chunkValue),
 			SchemaVersion: stringPtr("2"),
 			RuleID:        stringPtr(TypeNumericMismatch),
-			RuleVersion:   stringPtr("1"),
+			RuleVersion:   stringPtr("2"),
 			Title:         stringPtr("Answer numeric value conflicts with retrieved context"),
 			Category:      stringPtr("grounding"),
 			Confidence:    float64Ptr(0.9),
@@ -1334,6 +1502,70 @@ func (e *Engine) detectNumericMismatch(payload models.TracePayload) []models.War
 			CreatedAt:         time.Now().UTC().Format(time.RFC3339Nano),
 		},
 	}
+}
+
+func isElapsedTimeAnswerExpression(expression numericExpression) bool {
+	snippet := strings.ToLower(strings.TrimSpace(expression.Snippet))
+	raw := strings.ToLower(strings.TrimSpace(expression.Raw))
+
+	if snippet == "" || raw == "" {
+		return false
+	}
+
+	quotedRaw := regexp.QuoteMeta(raw)
+
+	patterns := []string{
+		// "20 days ago"
+		`\b` + quotedRaw + `\s+ago\b`,
+
+		// "bought 20 days ago", "purchased 20 days ago", "ordered 20 days ago"
+		`\b(bought|purchased|ordered)\b.{0,80}\b` + quotedRaw + `\s+ago\b`,
+
+		// "purchase from 20 days ago", "order from 20 days ago"
+		`\b(purchase|order|item|product)\b.{0,80}\b` + quotedRaw + `\s+ago\b`,
+	}
+
+	for _, pattern := range patterns {
+		if regexp.MustCompile(pattern).MatchString(snippet) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func answerExpressionSupportedByRetrievedChunk(
+	answerExpression numericExpression,
+	chunks []retrievedChunk,
+) bool {
+	for _, chunk := range chunks {
+		chunkText := strings.TrimSpace(chunk.Text)
+		if chunkText == "" {
+			continue
+		}
+
+		chunkExpressions := extractNumericExpressions(chunkText)
+		for _, chunkExpression := range chunkExpressions {
+			if answerExpression.Unit != chunkExpression.Unit {
+				continue
+			}
+
+			if answerExpression.Value != chunkExpression.Value {
+				continue
+			}
+
+			sharedTerms := sharedContextTerms(
+				answerExpression.ContextTerms,
+				chunkExpression.ContextTerms,
+			)
+
+			if len(sharedTerms) > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func isBetterNumericMismatchCandidate(candidate numericMismatchCandidate, current numericMismatchCandidate) bool {
@@ -1428,6 +1660,172 @@ func normalizeNumericUnit(raw string) string {
 	}
 }
 
+func numericExpressionTopic(expression numericExpression) string {
+	snippet := strings.ToLower(strings.TrimSpace(expression.Snippet))
+	if snippet == "" {
+		return ""
+	}
+
+	containsAny := func(keywords ...string) bool {
+		for _, keyword := range keywords {
+			if strings.Contains(snippet, keyword) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Order matters.
+	// Damaged-item policy snippets often contain words such as "delivery" or
+	// "shipping box", but their policy role is damaged-claim handling, not
+	// shipping-delivery timing.
+	if containsAny("damaged", "defective", "report", "photos", "photo", "packaging", "box", "shipping box") {
+		return "damaged_report"
+	}
+
+	// Return/refund-window claims often contain the word "refund", so classify
+	// purchase-window wording before refund-processing wording.
+	withinDaysOfPurchase := regexp.MustCompile(`\bwithin\s+\d{1,4}(?:\s*(?:-|to)\s*\d{1,4})?\s+(?:business\s+)?days?\s+of\s+(?:the\s+)?purchase(?:\s+date)?\b`)
+	if containsAny("return window", "refund window", "purchase date", "of purchase", "can still return", "still return") ||
+		(containsAny("return", "returns", "returned", "request") && containsAny("purchase", "purchase date")) ||
+		withinDaysOfPurchase.MatchString(snippet) {
+		return "return_window"
+	}
+
+	// Refund processing is specifically about post-return processing/issuance
+	// duration. Do not classify every "refund ... days" sentence as processing;
+	// that would misclassify refund-window facts such as "request a refund within
+	// 30 days of purchase".
+	if containsAny(
+		"processed",
+		"processing",
+		"issued",
+		"issue the refund",
+		"warehouse",
+		"inspection",
+		"refunds usually take",
+		"refund usually take",
+		"refunds take",
+		"refund takes",
+	) {
+		return "refund_processing"
+	}
+
+	if containsAny("shipping", "shipment", "shipped", "package", "arrived", "delivery", "domestic", "international", "customs") {
+		return "shipping_delivery"
+	}
+
+	if containsAny("warranty", "coverage", "manufacturing defects") {
+		return "warranty_period"
+	}
+
+	if containsAny("subscription", "cancel", "access", "billing period") {
+		return "subscription_access"
+	}
+
+	return ""
+}
+
+func mergeNumericExpressionTopics(left string, right string) string {
+	if left != "" {
+		return left
+	}
+
+	return right
+}
+
+func textIntentTopics(text string) []string {
+	normalized := strings.ToLower(strings.TrimSpace(text))
+	if normalized == "" {
+		return nil
+	}
+
+	normalized = strings.Join(strings.Fields(normalized), " ")
+
+	containsAny := func(keywords ...string) bool {
+		for _, keyword := range keywords {
+			if strings.Contains(normalized, keyword) {
+				return true
+			}
+		}
+		return false
+	}
+
+	topics := map[string]bool{}
+
+	if containsAny("digital", "downloadable", "software", "license key", "license keys", "gift card", "gift cards", "non-refundable", "nonrefundable") {
+		topics["digital_goods"] = true
+	}
+
+	if containsAny("damaged", "defective", "original box", "original packaging", "packaging", "photos", "photo", "repair", "replacement", "shipping box") {
+		topics["damaged_report"] = true
+	}
+
+	if containsAny("warranty", "coverage", "manufacturing defect", "manufacturing defects") {
+		topics["warranty_period"] = true
+	}
+
+	if containsAny("subscription", "cancel", "billing period", "access") {
+		topics["subscription_access"] = true
+	}
+
+	if containsAny("shipping", "shipment", "shipped", "package arrived", "domestic package", "international", "customs", "delivery") &&
+		!topics["damaged_report"] {
+		topics["shipping_delivery"] = true
+	}
+
+	refundProcessingPhrase := containsAny(
+		"refund processed",
+		"refunds processed",
+		"refund processing",
+		"process refund",
+		"process refunds",
+		"refunds usually take",
+		"refund usually take",
+		"refunds take",
+		"how long do refunds take",
+		"how long does a refund take",
+		"warehouse",
+		"inspection",
+	)
+
+	refundProcessingQuestion := containsAny("refund", "refunds") &&
+		containsAny("process", "processed", "processing", "take", "takes", "business days", "how long", "usually")
+
+	if refundProcessingPhrase || refundProcessingQuestion {
+		topics["refund_processing"] = true
+	}
+
+	returnWindowPhrase := containsAny("return window", "refund window", "purchase date", "can i still return", "still return")
+	returnWindowQuestion := containsAny("return", "returns", "returned") &&
+		containsAny("physical product", "physical products", "product", "purchase", "days", "how many", "how long", "window")
+
+	if returnWindowPhrase || returnWindowQuestion {
+		topics["return_window"] = true
+	}
+
+	result := make([]string, 0, len(topics))
+	for topic := range topics {
+		result = append(result, topic)
+	}
+
+	sort.Strings(result)
+	return result
+}
+
+func topicMatchesAnyIntent(candidateTopic string, intentTopics []string) bool {
+	if candidateTopic == "" || len(intentTopics) == 0 {
+		return true
+	}
+
+	for _, intentTopic := range intentTopics {
+		if candidateTopic == intentTopic {
+			return true
+		}
+	}
+
+	return false
+}
 func sentenceContaining(text string, needle string) string {
 	text = strings.TrimSpace(text)
 	if text == "" {

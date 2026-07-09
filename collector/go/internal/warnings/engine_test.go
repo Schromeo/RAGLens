@@ -22,7 +22,7 @@ func TestGenerateNumericMismatchWarning(t *testing.T) {
 	warning := requireWarningType(t, warnings, TypeNumericMismatch)
 
 	requireStringPtrValue(t, warning.Category, "grounding", "category")
-	requireStringPtrValue(t, warning.RuleVersion, "1", "rule_version")
+	requireStringPtrValue(t, warning.RuleVersion, "2", "rule_version")
 
 	if warning.Confidence == nil {
 		t.Fatalf("expected numeric_mismatch confidence to be set")
@@ -49,6 +49,306 @@ func TestGenerateNumericMismatchWarning(t *testing.T) {
 	}
 }
 
+func TestNumericMismatchIgnoresElapsedTimeWithinPolicyWindow(t *testing.T) {
+	payload := basePayload(
+		"trace_numeric_mismatch_elapsed_time",
+		"I bought a physical product 20 days ago. Can I still return it?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_refund_current",
+				"Customers may return most physical products within 30 days of the purchase date.",
+				0.93,
+				"refund_policy_current.md",
+			),
+			chunk(
+				"chunk_refund_legacy",
+				"Physical products can only be returned within 14 days of the purchase date.",
+				0.81,
+				"refund_policy_legacy.md",
+			),
+		},
+		"Yes. The current refund policy says customers may return most physical products within 30 days of purchase, so a purchase from 20 days ago is still within the return window.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+
+	requireNoWarningType(t, warnings, TypeNumericMismatch)
+
+	// The retrieved context still contains a real current-vs-legacy conflict.
+	// That should remain a conflicting_chunks warning.
+	requireWarningType(t, warnings, TypeConflictingChunks)
+}
+
+func TestNumericMismatchStillDetectsWrongPolicyWindow(t *testing.T) {
+	payload := basePayload(
+		"trace_numeric_mismatch_wrong_window",
+		"How long do customers have to return a physical product?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_refund_current",
+				"Customers may return most physical products within 30 days of the purchase date.",
+				0.93,
+				"refund_policy_current.md",
+			),
+		},
+		"Customers have 45 days to return a physical product.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+
+	warning := requireWarningType(t, warnings, TypeNumericMismatch)
+
+	if warning.Details["answer_value"] != "45 days" {
+		t.Fatalf("expected answer_value=45 days, got %#v", warning.Details["answer_value"])
+	}
+
+	if warning.Details["retrieved_value"] != "30 days" {
+		t.Fatalf("expected retrieved_value=30 days, got %#v", warning.Details["retrieved_value"])
+	}
+}
+
+func TestNumericMismatchDetectsWrongProcessingTimeAgainstRange(t *testing.T) {
+	payload := basePayload(
+		"trace_numeric_mismatch_processing_time",
+		"How long do refunds take to process?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_refund_processing",
+				"Refunds are usually processed within 5 to 10 business days after the returned item is received.",
+				0.93,
+				"refund_policy_current.md",
+			),
+		},
+		"Refunds are usually processed within 2 business days.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+
+	warning := requireWarningType(t, warnings, TypeNumericMismatch)
+
+	if warning.Details["answer_value"] != "2 business days" {
+		t.Fatalf("expected answer_value=2 business days, got %#v", warning.Details["answer_value"])
+	}
+
+	if warning.Details["retrieved_value"] != "5-10 business days" {
+		t.Fatalf("expected retrieved_value=5-10 business days, got %#v", warning.Details["retrieved_value"])
+	}
+}
+
+func TestNumericMismatchIgnoresMatchingNaturalLanguageRange(t *testing.T) {
+	payload := basePayload(
+		"trace_numeric_mismatch_matching_range",
+		"How long do refunds take to process?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_refund_processing",
+				"Refunds are usually processed within 5 to 10 business days after the returned item is received.",
+				0.93,
+				"refund_policy_current.md",
+			),
+		},
+		"Refunds are usually processed within 5 to 10 business days after the returned item is received.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+
+	requireNoWarningType(t, warnings, TypeNumericMismatch)
+}
+
+func TestConflictingChunksPrefersQueryRelevantProcessingConflict(t *testing.T) {
+	payload := basePayload(
+		"trace_conflicting_chunks_processing_relevance",
+		"How long do refunds usually take to process?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_processing_current",
+				"Refunds are usually processed within 5 to 10 business days after the returned item is received by the warehouse.",
+				0.91,
+				"refund_policy_current.md",
+			),
+			chunk(
+				"chunk_processing_legacy",
+				"Refunds are processed within 15 to 20 business days after warehouse inspection.",
+				0.88,
+				"refund_policy_legacy.md",
+			),
+			chunk(
+				"chunk_return_window_current",
+				"Customers may return most physical products within 30 days of the purchase date.",
+				0.87,
+				"refund_policy_current.md",
+			),
+			chunk(
+				"chunk_return_window_legacy",
+				"Physical products can only be returned within 14 days of the purchase date.",
+				0.86,
+				"refund_policy_legacy.md",
+			),
+		},
+		"Refunds are usually processed within 5 to 10 business days after the returned item is received by the warehouse.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+	warning := requireWarningType(t, warnings, TypeConflictingChunks)
+
+	values, ok := warning.Details["detected_values"].([]string)
+	if !ok {
+		t.Fatalf("expected detected_values []string, got %#v", warning.Details["detected_values"])
+	}
+
+	if !containsString(values, "5-10 business days") || !containsString(values, "15-20 business days") {
+		t.Fatalf("expected detected values to contain processing ranges, got %#v", values)
+	}
+
+	if len(values) == 2 && containsString(values, "30 days") && containsString(values, "14 days") {
+		t.Fatalf("expected processing conflict to be preferred over return-window conflict, got %#v", values)
+	}
+
+	if warning.Details["query_matched_terms"] == nil {
+		t.Fatalf("expected query_matched_terms in conflicting_chunks details")
+	}
+
+	if warning.Details["relevance_score"] == nil {
+		t.Fatalf("expected relevance_score in conflicting_chunks details")
+	}
+}
+
+func TestConflictingChunksSkipsUnrelatedPhysicalReturnWindowForDigitalQuery(t *testing.T) {
+	payload := basePayload(
+		"trace_conflicting_chunks_digital_query",
+		"Can I get a refund for downloadable software if I never opened it?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_digital_goods",
+				"Downloadable software, license keys, digital gift cards, and other digital goods are generally non-refundable after purchase. A refund may be considered only when the digital item was not delivered, the license key was invalid, or a duplicate charge occurred.",
+				0.92,
+				"digital_goods_policy.md",
+			),
+			chunk(
+				"chunk_return_window_current",
+				"Customers may return most physical products within 30 days of the purchase date.",
+				0.75,
+				"refund_policy_current.md",
+			),
+			chunk(
+				"chunk_return_window_legacy",
+				"Physical products can only be returned within 14 days of the purchase date.",
+				0.72,
+				"refund_policy_legacy.md",
+			),
+		},
+		"Downloadable software is generally non-refundable after purchase. A refund may be considered only when the digital item was not delivered, the license key was invalid, or a duplicate charge occurred.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+
+	requireNoWarningType(t, warnings, TypeConflictingChunks)
+	requireNoWarningType(t, warnings, TypeNumericMismatch)
+	requireNoWarningType(t, warnings, TypeAnswerNotGrounded)
+}
+
+func TestConflictingChunksKeepsReturnWindowConflictWhenQueryRelevant(t *testing.T) {
+	payload := basePayload(
+		"trace_conflicting_chunks_return_window_relevant",
+		"How many days do customers have to return a physical product?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_return_window_current",
+				"Customers may return most physical products within 30 days of the purchase date.",
+				0.93,
+				"refund_policy_current.md",
+			),
+			chunk(
+				"chunk_return_window_legacy",
+				"Physical products can only be returned within 14 days of the purchase date.",
+				0.89,
+				"refund_policy_legacy.md",
+			),
+		},
+		"One retrieved refund policy says customers may return most physical products within 30 days. Another archived legacy refund policy says physical products can only be returned within 14 days.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+	warning := requireWarningType(t, warnings, TypeConflictingChunks)
+
+	values, ok := warning.Details["detected_values"].([]string)
+	if !ok {
+		t.Fatalf("expected detected_values []string, got %#v", warning.Details["detected_values"])
+	}
+
+	if !containsString(values, "30 days") || !containsString(values, "14 days") {
+		t.Fatalf("expected detected values to contain 30 days and 14 days, got %#v", values)
+	}
+}
+
+func TestConflictingChunksSuppressesRefundProcessingConflictForDamagedQuery(t *testing.T) {
+	payload := basePayload(
+		"trace_conflicting_chunks_damaged_query",
+		"My item arrived damaged but I threw away the original box. What should I do?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_damaged_policy",
+				"# Damaged Items Policy Customers should report damaged or defective items within 7 days of delivery. A damaged item report should include the order number, a description of the issue, and clear photos of the damaged product and shipping box if available. Original packaging is recommended because it helps the warehouse inspect shipping damage, but support may still review a damaged item claim if the packaging was discarded. If the claim is approved, support may offer a replacement, repair, store credit, or refund.",
+				0.93,
+				"damaged_items_policy.md",
+			),
+			chunk(
+				"chunk_refund_processing_current",
+				"Refunds are usually processed within 5 to 10 business days after the returned item is received by the warehouse.",
+				0.82,
+				"refund_policy_current.md",
+			),
+			chunk(
+				"chunk_refund_processing_legacy",
+				"Refunds are processed within 15 to 20 business days after warehouse inspection.",
+				0.79,
+				"refund_policy_legacy.md",
+			),
+		},
+		"You should contact support and provide your order number, a description of the damage, and photos if available. Original packaging is recommended, but support may still review the claim if the box was discarded.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+
+	requireNoWarningType(t, warnings, TypeConflictingChunks)
+	requireNoWarningType(t, warnings, TypeNumericMismatch)
+	requireNoWarningType(t, warnings, TypeAnswerNotGrounded)
+}
+
+func TestConflictingChunksKeepsRefundProcessingConflictWhenQueryAsksProcessingTime(t *testing.T) {
+	payload := basePayload(
+		"trace_conflicting_chunks_processing_query",
+		"How long do refunds usually take to process?",
+		[]models.JSONMap{
+			chunk(
+				"chunk_refund_processing_current",
+				"Refunds are usually processed within 5 to 10 business days after the returned item is received by the warehouse.",
+				0.93,
+				"refund_policy_current.md",
+			),
+			chunk(
+				"chunk_refund_processing_legacy",
+				"Refunds are processed within 15 to 20 business days after warehouse inspection.",
+				0.89,
+				"refund_policy_legacy.md",
+			),
+		},
+		"Refunds are usually processed within 5 to 10 business days after the returned item is received by the warehouse.",
+	)
+
+	warnings := NewEngine().Generate(payload)
+	warning := requireWarningType(t, warnings, TypeConflictingChunks)
+
+	values, ok := warning.Details["detected_values"].([]string)
+	if !ok {
+		t.Fatalf("expected detected_values []string, got %#v", warning.Details["detected_values"])
+	}
+
+	if !containsString(values, "5-10 business days") || !containsString(values, "15-20 business days") {
+		t.Fatalf("expected detected values to contain processing ranges, got %#v", values)
+	}
+}
+
 func TestGenerateWeakQueryChunkOverlapWarning(t *testing.T) {
 	payload := basePayload(
 		"trace_weak_overlap",
@@ -65,7 +365,7 @@ func TestGenerateWeakQueryChunkOverlapWarning(t *testing.T) {
 	warning := requireWarningType(t, warnings, TypeWeakQueryChunkOverlap)
 
 	requireStringPtrValue(t, warning.Category, "retrieval", "category")
-	requireStringPtrValue(t, warning.RuleVersion, "1", "rule_version")
+	requireStringPtrValue(t, warning.RuleVersion, "2", "rule_version")
 
 	if warning.Confidence == nil {
 		t.Fatalf("expected weak_query_chunk_overlap confidence to be set")
@@ -254,6 +554,20 @@ func requireWarningType(t *testing.T, warnings []models.Warning, warningType str
 	t.Fatalf("expected warning type %q, got warning types %v", warningType, warningTypes(warnings))
 
 	return models.Warning{}
+}
+
+func requireNoWarningType(t *testing.T, warnings []models.Warning, warningType string) {
+	t.Helper()
+
+	for _, warning := range warnings {
+		if warning.Type == warningType {
+			t.Fatalf(
+				"expected no warning type %q, got warning types %v",
+				warningType,
+				warningTypes(warnings),
+			)
+		}
+	}
 }
 
 func warningTypes(warnings []models.Warning) []string {
