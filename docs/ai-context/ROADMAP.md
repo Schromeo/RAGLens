@@ -317,6 +317,38 @@ python -m examples.real_llm_rag_demo all
 
 ---
 
+## v0.4 — Packaging and External Developer Experience
+
+**Status:** Planned
+
+### Goal
+
+Make RAGLens easier for an external developer to run locally from a fresh checkout.
+
+### Candidate Scope
+
+* [ ] Docker Compose for collector + dashboard
+* [ ] `.env.example`
+* [ ] startup health checks
+* [ ] clean local database reset guidance
+* [ ] clearer first-run setup
+* [ ] README quickstart polish
+* [ ] release-clean docs pass
+* [ ] optional packaged local CLI investigation
+
+### Out of Scope
+
+* hosted collector
+* auth
+* cloud sync
+* paid SaaS features
+* LLM-as-judge default evaluator
+* agent/tool/memory spans
+* LangChain/LlamaIndex adapters unless explicitly selected
+* PyPI publishing unless explicitly selected
+
+---
+
 ## Future — Agent Harness Observability (TraceForge Direction)
 
 **Status:** Future
@@ -334,4 +366,4 @@ Potential future direction after current milestones:
 Important scope note:
 
 * none of the above is implemented in current RAGLens
-* this direction is not part of current v0.3 scope
+* this direction is not part of current v0.4 scope

@@ -20,6 +20,7 @@
   - mismatch suppression remains when answer numeric value is directly supported by at least one retrieved chunk
 - Hardened conflicting chunk candidate selection with deterministic relevance-aware ranking and query gating.
 - Added deterministic topic classifier for numeric expressions and topic gating in conflicting chunk selection.
+- Added query-intent compatibility for conflicting chunk diagnostics so damaged-item queries do not surface unrelated refund-processing conflicts.
 - Added/updated warning tests for:
   - numeric range mismatch behavior
   - matching-range non-mismatch behavior
@@ -50,6 +51,13 @@ Observed results:
 - wrong-window and wrong-processing-range still trigger `numeric_mismatch` as expected
 - weak case continues to trigger retrieval + grounding diagnostics
 - subscription case remains low-noise and typically warning-free
+
+Observed final reference app behavior:
+
+- `damaged` produces no warning after query-intent/topic compatibility gating
+- `processing-range` still surfaces relevant refund-processing conflicts
+- `wrong-processing-range` still surfaces `numeric_mismatch`
+- `weak` still surfaces `answer_not_grounded`
 
 ### Notes
 

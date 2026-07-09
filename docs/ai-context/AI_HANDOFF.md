@@ -333,57 +333,53 @@ Recommended v0.4 goal:
 
 Make local-first RAGLens easier to adopt outside this repository while preserving deterministic diagnostics and current trace contracts.
 
-Suggested new demo:
+Real LLM demo status:
 
-- sdk/python/examples/real_llm_rag_demo.py
-
-or:
-
-- sdk/python/examples/openai_rag_demo.py
-
-Recommended first version:
-
-- use local markdown docs
-- use local deterministic TF-IDF retrieval first
-- call a real LLM for answer generation
-- trace retrieval span through RAGLens SDK
-- trace LLM span through RAGLens SDK
-- flush to collector
-- inspect resulting trace and warnings in dashboard
+- `sdk/python/examples/real_llm_rag_demo.py` already exists and has been smoke-tested.
+- It should remain a validation asset, not a next-milestone deliverable.
 
 Why this is next:
 
-- current demos are deterministic and intentionally synthetic
-- v0.3 proved the diagnostic layer works
-- the next important validation is whether RAGLens helps debug real model behavior
-- real LLM demo should come before packaging, Docker, CLI, or PyPI
+- v0.3.5 delivered deterministic warning-quality hardening and realistic integration validation.
+- the next priority is reducing first-run friction for external developers.
+- packaging and startup ergonomics now provide higher leverage than adding another demo.
 
 ## Suggested v0.4 Scope
 
 In scope:
 
-- real LLM demo using existing Python SDK
-- one provider path initially, preferably OpenAI or local Ollama
-- local docs and local retriever to keep the setup simple
-- environment variable for API key if using hosted LLM
-- clear fallback or skip behavior if API key is missing
-- document how this simulates real RAG app development
-- keep RAGLens as a tracing/debugging layer, not the RAG framework
+- Docker Compose local stack for collector + dashboard
+- `.env.example` for local configuration defaults
+- startup health checks and clearer startup failure guidance
+- clean local database reset/sample-data guidance
+- README quickstart consolidation and first-run clarity
+- release-clean docs pass for external developer onboarding
+- optional local CLI wrapper investigation (without forcing packaging decisions)
 
-Out of scope for v0.3.5:
+Existing validation assets:
+
+- `sdk/python/examples/real_llm_rag_demo.py`
+- `sdk/python/examples/reference_rag_app/run.py`
+- `sdk/python/examples/diagnostic_quality_demo.py`
+
+Out of scope for v0.4:
 
 - LangChain adapter
 - LlamaIndex adapter
-- Docker
 - PyPI
-- packaged CLI
+- hosted collector
+- auth
+- cloud sync
+- paid SaaS features
 - agent spans
 - tool spans
 - memory spans
-- cloud sync
-- hosted collector
-- auth
 - LLM-as-judge default evaluator
+
+Unless explicitly selected:
+
+- framework adapters (LangChain/LlamaIndex)
+- PyPI publishing
 
 ## Important Guardrails
 

@@ -20,13 +20,13 @@ The project now has:
 
 ## Current Goal
 
-Close out v0.3.5 documentation and handoff with a verified deterministic reference-integration flow.
+Choose and start v0.4 Packaging / External Developer Experience planning.
 
 Current focus:
 
-- finalize v0.3.5 implementation and validation documentation
-- capture deterministic warning-quality hardening outcomes
-- prepare a clean handoff into the next milestone planning slice
+- prepare v0.4 scope decision and default recommendation
+- define first-run external developer experience improvements
+- keep v0.3.5 validation assets as regression baselines
 
 ## Current System Status
 
@@ -236,6 +236,10 @@ Still not implemented:
 ## Next Task
 
 Choose the next narrow follow-up after the completed v0.3.5 diagnostic-quality hardening slice.
+
+Default recommendation:
+
+Prepare v0.4 scope decision with Packaging / External Developer Experience as the default path.
 
 Recommended next options:
 
