@@ -81,136 +81,63 @@ See `docs/demo/WARNING_RULES.md` for current rule definitions and limitations.
 
 ## Quickstart
 
-### Path A: Try RAGLens with the built-in demo
+### Path A: Docker Compose local stack (recommended)
 
-Use this path to validate that the local RAGLens debugging stack works on your machine.
-
-From the RAGLens repo root:
+Use this path when you are fresh-cloning the repo and want the fastest first run.
 
 ```bash
-python scripts/start-raglens.py
+docker compose up --build
 ```
 
-This repo-local helper starts the collector from `collector/go` and the dashboard from `dashboard/web`.
-
-If you need a manual fallback, start the services separately.
-
-Collector:
+In another terminal, verify collector health:
 
 ```bash
-cd collector/go
-go run ./cmd/raglens-collector
+curl http://localhost:4319/health
 ```
 
-Dashboard:
-
-```bash
-cd dashboard/web
-npm install
-npm run dev
-```
-
-Then run the built-in demo traces in another terminal:
+Then generate reference traces:
 
 ```bash
 cd sdk/python
-python -m examples.local_rag_demo.run_demo trace-all
+pip install -e .
+python -m examples.reference_rag_app.run all
 ```
 
-PowerShell, if you want to set the collector URL explicitly:
-
-```powershell
-$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
-python -m examples.local_rag_demo.run_demo trace-all
-```
-
-Bash, if you want to set the collector URL explicitly:
-
-```bash
-export RAGLENS_COLLECTOR_URL="http://localhost:4319"
-python -m examples.local_rag_demo.run_demo trace-all
-```
-
-Open the dashboard and inspect the generated traces.
-
-Default dashboard URL:
+Open:
 
 ```text
 http://localhost:5173
 ```
 
-Default collector URL:
+### Path B: Repo-local startup helper (fallback)
 
-```text
-http://localhost:4319
+Use this path when you do not want Docker.
+
+From the repo root:
+
+```bash
+python scripts/start-raglens.py
 ```
 
-### Optional v0.3.5 reference integration traces
-
-The reference app is a thin, realistic-ish RAG integration flow. It validates mixed retrieval output normalization through `normalize_chunks()` and exercises the hardened warning engine on deterministic cases.
+Then run traces in another terminal:
 
 ```bash
 cd sdk/python
 python -m examples.reference_rag_app.run all
 ```
 
-Useful individual cases:
+Manual fallback startup (non-Docker):
 
 ```bash
-python -m examples.reference_rag_app.run refund
-python -m examples.reference_rag_app.run conflict
-python -m examples.reference_rag_app.run wrong-window
-python -m examples.reference_rag_app.run processing-range
-python -m examples.reference_rag_app.run wrong-processing-range
-python -m examples.reference_rag_app.run damaged
-python -m examples.reference_rag_app.run digital
-python -m examples.reference_rag_app.run subscription
-python -m examples.reference_rag_app.run weak
+cd collector/go
+go run ./cmd/raglens-collector
+
+cd dashboard/web
+npm install
+npm run dev
 ```
 
-The reference app includes deterministic cases for:
-
-* elapsed-time false-positive protection
-* natural-language numeric ranges such as `5 to 10 business days`
-* numeric mismatch detection such as `45 days` vs retrieved `30 days`
-* topic-gated conflicting chunk diagnostics
-* unsupported answer claim detection
-* low-noise good traces
-
-### Optional real LLM validation
-
-RAGLens also includes an optional real LLM validation demo.
-
-The default demos do not require an API key. This optional path is for testing RAGLens as an observer of a more realistic RAG flow.
-
-```bash
-cd sdk/python
-python -m examples.real_llm_rag_demo all
-```
-
-If using an OpenAI-compatible provider:
-
-```bash
-export OPENAI_API_KEY="your_key"
-export OPENAI_MODEL="gpt-4o-mini"
-export OPENAI_BASE_URL="https://api.openai.com/v1"
-
-python -m examples.real_llm_rag_demo all
-```
-
-If using an Ollama-compatible local endpoint:
-
-```bash
-export OPENAI_API_KEY="ollama"
-export OPENAI_BASE_URL="http://localhost:11434/v1"
-export OPENAI_MODEL="llama3.1:8b"
-
-python -m examples.real_llm_rag_demo all
-```
-
-The real LLM demo is a validation asset. It is not required for the default local setup.
-
-## Path B: Use RAGLens with your own RAG app
+### Path C: Use RAGLens with your own RAG app
 
 Use this path when you want to instrument an existing Python RAG application instead of using only the built-in demo.
 
@@ -284,6 +211,53 @@ For practical integration details, see:
 * `docs/integrations/PYTHON_SDK_GUIDE.md`
 * `sdk/python/examples/custom_pipeline_demo.py`
 
+## Local RAG demo
+
+The local demo is deterministic and API-key free.
+
+```bash
+cd sdk/python
+python -m examples.local_rag_demo.run_demo trace-all
+```
+
+Useful docs:
+
+* `docs/demo/LOCAL_RAG_DEMO.md`
+* `docs/demo/SMOKE_TEST.md`
+* `docs/demo/WARNING_RULES.md`
+
+## Diagnostic quality reference app
+
+This is the recommended validation app for v0.4 first-run checks.
+
+```bash
+cd sdk/python
+python -m examples.reference_rag_app.run all
+```
+
+Expected traces:
+
+* `reference-rag-app-refund`
+* `reference-rag-app-conflict`
+* `reference-rag-app-wrong-window`
+* `reference-rag-app-processing-range`
+* `reference-rag-app-wrong-processing-range`
+* `reference-rag-app-damaged`
+* `reference-rag-app-digital`
+* `reference-rag-app-subscription`
+* `reference-rag-app-weak`
+
+For full run guide, see `docs/demo/REFERENCE_RAG_APP.md`.
+
+## Optional real LLM validation
+
+The default demos do not require an API key.
+
+```bash
+cd sdk/python
+python -m examples.real_llm_rag_demo all
+```
+
 ## Windows PowerShell shortcuts
 
 You can also use the provided PowerShell scripts from the repository root.
@@ -352,103 +326,6 @@ Run the smoke test:
 bash ./scripts/mac/smoke.sh
 ```
 
-## Local RAG Demo
-
-The local demo is deterministic and API-key free.
-
-It uses:
-
-* local markdown policy documents
-* simple chunking
-* TF-IDF retrieval
-* cosine similarity scores
-* a local template-based answerer
-* the RAGLens Python SDK
-* the local collector and dashboard
-
-Useful demo docs:
-
-* `docs/demo/LOCAL_RAG_DEMO.md`
-* `docs/demo/SMOKE_TEST.md`
-* `docs/demo/WARNING_RULES.md`
-* `docs/demo/DASHBOARD_POLISH.md`
-
-### Demo warning cases
-
-| Case           | What it simulates                        | Expected warning      |
-| -------------- | ---------------------------------------- | --------------------- |
-| `no_match`     | No useful retrieved chunks               | `no_retrieved_chunks` |
-| `low_score`    | Weak retrieval confidence                | `low_retrieval_score` |
-| `duplicate`    | Duplicated retrieved evidence            | `duplicate_chunks`    |
-| `conflict`     | Conflicting retrieved policy chunks      | `conflicting_chunks`  |
-| `hallucinated` | Answer not supported by retrieved chunks | `answer_not_grounded` |
-
-Recommended command:
-
-```bash
-python -m examples.local_rag_demo.run_demo trace-all
-```
-
-On Windows PowerShell:
-
-```powershell
-.\scripts\windows\demo-trace-all.ps1
-```
-
-On macOS:
-
-```bash
-bash ./scripts/mac/demo-trace-all.sh
-```
-
-Then open the dashboard and inspect:
-
-* `real-local-rag-conflict`
-* `real-local-rag-hallucinated`
-* `real-local-rag-no_match`
-
-## Diagnostic quality reference app
-
-The v0.3.5 reference app lives at:
-
-```text
-sdk/python/examples/reference_rag_app/
-```
-
-It is designed to validate RAGLens against a more realistic local integration flow while keeping the default path deterministic.
-
-It demonstrates:
-
-* local markdown policy corpus
-* local lexical retrieval
-* mixed raw retrieval result shapes
-* normalization through `normalize_chunks()`
-* retrieval span logging
-* LLM span logging
-* deterministic answer generation by default
-* optional real LLM mode
-* warning-quality regression cases
-
-Useful command:
-
-```bash
-cd sdk/python
-python -m examples.reference_rag_app.run all
-```
-
-Expected high-level behavior:
-
-| Case                     | Expected behavior                                                               |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `refund`                 | No false-positive numeric mismatch for elapsed-time phrasing like `20 days ago` |
-| `wrong-window`           | `numeric_mismatch` for `45 days` vs retrieved `30 days`                         |
-| `processing-range`       | Relevant refund-processing conflict, no numeric mismatch                        |
-| `wrong-processing-range` | `numeric_mismatch` for `2 business days` vs retrieved `5-10 business days`      |
-| `damaged`                | No unrelated refund-processing conflict                                         |
-| `digital`                | No unrelated physical return-window conflict                                    |
-| `subscription`           | Low-noise good trace                                                            |
-| `weak`                   | Retrieval warnings plus `answer_not_grounded` for an unsupported claim          |
-
 ## Documentation
 
 ### For users
@@ -456,8 +333,10 @@ Expected high-level behavior:
 * `docs/product/USER_ONBOARDING.md` - Integrate RAGLens into an existing RAG app.
 * `docs/integrations/PYTHON_SDK_GUIDE.md` - Python SDK API usage.
 * `docs/demo/LOCAL_RAG_DEMO.md` - Deterministic local demo flow.
+* `docs/demo/REFERENCE_RAG_APP.md` - Reference integration runbook.
 * `docs/demo/SMOKE_TEST.md` - End-to-end smoke test flow.
 * `docs/demo/WARNING_RULES.md` - Current warning rules and limitations.
+* `docs/releases/V0_4_0.md` - v0.4.0 release notes.
 
 ### For contributors / maintainers
 
@@ -470,12 +349,18 @@ Expected high-level behavior:
 
 ## Current status
 
-RAGLens v0.1, v0.2, v0.3, and v0.3.5 are complete and smoke-tested.
+Milestone snapshot:
+
+* v0.1 local RAG debugger MVP: complete
+* v0.2 developer integration / local SDK onboarding: complete
+* v0.3 diagnostic intelligence core: complete
+* v0.3.5 deterministic diagnostic-quality hardening: complete
+* v0.4.0 local release / first-run developer experience: complete
 
 Current version:
 
 ```text
-v0.3.5 — Diagnostic Quality Hardening
+v0.4.0 — Local Release / Install & First-Run Experience
 ```
 
 Completed:
@@ -504,14 +389,11 @@ Completed:
   * query-intent compatibility for conflict warnings
 * Thin reference RAG app with mixed retrieval output normalization
 * Optional real LLM validation demo
+* Docker Compose local stack for collector + dashboard
+* root `.env.example` and Docker reset guidance
+* v0.4 release notes and first-run docs cleanup
 
 The default demo requires no external LLM API and no API key.
-
-Recommended next milestone:
-
-```text
-v0.4 — Packaging and External Developer Experience
-```
 
 ## Current limitations
 
@@ -520,7 +402,6 @@ Current scope limits:
 * only `retrieval` and `llm` spans are implemented
 * onboarding path is local-first and repo-based
 * editable install from local checkout is the supported SDK path today
-* no Docker Compose local setup yet
 * no packaged CLI yet
 * no PyPI publishing yet
 * no LangChain adapter yet
@@ -546,12 +427,9 @@ Future agent harness observability may also include running traces across multi-
 
 Near-term focus:
 
-* reduce first-run friction for external developers
-* improve local startup and health-check guidance
-* add Docker Compose or an equivalent local stack path
-* add `.env.example` and cleaner configuration defaults
-* polish README and release-clean onboarding docs
-* preserve deterministic local diagnostics as the default path
+* keep first-run friction low for external developers
+* preserve deterministic-first warning generation
+* keep trace contracts stable while improving installability
 
 Future integrations such as LangChain, LlamaIndex, PyPI publishing, and hosted/cloud features can be added later, but they are not part of the current implemented scope.
 

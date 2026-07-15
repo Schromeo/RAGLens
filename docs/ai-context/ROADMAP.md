@@ -6,7 +6,7 @@ Each version includes clear scope boundaries so RAGLens stays local-first, light
 
 ## Current Snapshot
 
-**Current version:** v0.3.5 — Diagnostic Quality Hardening  
+**Current version:** v0.4.0 — Local Release / Install & First-Run Experience  
 **Status:** Completed and smoke-tested
 
 RAGLens has completed the local inspection loop for both the built-in demo and user-owned Python RAG pipelines, and is now upgrading the warning layer into evidence-backed diagnostics:
@@ -58,6 +58,14 @@ Completed foundation highlights:
 * v0.3 diagnostic quality demo cases for numeric mismatch, weak overlap, unsupported claim, and conflicting chunks
 * evidence-backed warning detail UI with compared-value and recommended-action blocks
 * v0.3.5 reference integration app and policy corpus under `sdk/python/examples/reference_rag_app/`
+
+Current v0.4.0 release-readiness highlights:
+
+* Docker Compose local stack for collector + dashboard
+* collector and dashboard Dockerfiles
+* root `.env.example`
+* first-run smoke-test and reset guidance
+* release notes and README quickstart consolidation
 
 ---
 
@@ -319,22 +327,40 @@ python -m examples.real_llm_rag_demo all
 
 ## v0.4 — Packaging and External Developer Experience
 
-**Status:** Planned
+**Status:** Done
 
 ### Goal
 
 Make RAGLens easier for an external developer to run locally from a fresh checkout.
 
-### Candidate Scope
+### Scope
 
-* [ ] Docker Compose for collector + dashboard
-* [ ] `.env.example`
-* [ ] startup health checks
-* [ ] clean local database reset guidance
-* [ ] clearer first-run setup
-* [ ] README quickstart polish
-* [ ] release-clean docs pass
-* [ ] optional packaged local CLI investigation
+* [x] Docker Compose for collector + dashboard
+* [x] `.env.example`
+* [x] startup health checks and guidance
+* [x] local database reset guidance (Docker and non-Docker)
+* [x] clearer first-run setup
+* [x] README quickstart polish
+* [x] release notes and docs pass
+* [x] optional local `scripts/check-raglens.py` health script
+
+### Validation Gate
+
+Required before marking complete:
+
+* `cd collector/go && go test ./... -count=1`
+* `cd dashboard/web && npm run build`
+* `docker compose up --build`
+* `curl http://localhost:4319/health`
+* `cd sdk/python && pip install -e . && python -m examples.reference_rag_app.run all`
+
+Validated on 2026-07-15:
+
+* all commands above passed
+* `GET /api/traces` contained all expected `reference-rag-app-*` trace names
+* Docker cleanup commands passed:
+  * `docker compose down`
+  * `docker compose down -v`
 
 ### Out of Scope
 

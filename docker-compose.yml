@@ -1,0 +1,28 @@
+services:
+  collector:
+    build:
+      context: ./collector/go
+      dockerfile: Dockerfile
+    container_name: raglens-collector
+    environment:
+      RAGLENS_COLLECTOR_ADDR: ":4319"
+      RAGLENS_DB_PATH: /data/raglens.db
+    ports:
+      - "${RAGLENS_COLLECTOR_PORT:-4319}:4319"
+    volumes:
+      - raglens_data:/data
+
+  dashboard:
+    build:
+      context: ./dashboard/web
+      dockerfile: Dockerfile
+      args:
+        VITE_RAGLENS_API_URL: ${VITE_RAGLENS_API_URL:-http://localhost:4319}
+    container_name: raglens-dashboard
+    depends_on:
+      - collector
+    ports:
+      - "${RAGLENS_DASHBOARD_PORT:-5173}:5173"
+
+volumes:
+  raglens_data:

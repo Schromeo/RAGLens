@@ -10,6 +10,22 @@ RAGLens is a local-first visual debugger for RAG pipelines.
 
 ## Current Project Status
 
+### v0.4.0 Status
+
+**v0.4.0 Local Release / Install & First-Run Experience is complete and smoke-tested.**
+
+v0.4.0 implementation focus:
+
+- Docker Compose stack for collector + dashboard
+- first-run quickstart consolidation
+- health and reset guidance
+- release-note and smoke-doc alignment
+
+Validation state:
+
+- implementation completed
+- required validation commands passed on 2026-07-15
+
 ### v0.1 Status
 
 **v0.1 Local RAG Debugger MVP is complete and smoke-tested.**
@@ -131,7 +147,33 @@ React Dashboard
 
 ## Exact Commands That Passed
 
-Validated v0.2 / v0.3 / v0.3.5 runtime commands:
+v0.4.0 validation commands that passed:
+
+```bash
+cd collector/go
+go test ./... -count=1
+
+cd dashboard/web
+npm run build
+
+cd ..\..
+docker compose up --build
+curl http://localhost:4319/health
+
+cd sdk/python
+pip install -e .
+python -m examples.reference_rag_app.run all
+```
+
+Additional v0.4 runtime checks that passed:
+
+```bash
+curl http://localhost:5173
+docker compose down
+docker compose down -v
+```
+
+Legacy validated v0.2 / v0.3 / v0.3.5 runtime commands:
 
 ```bash
 python scripts/start-raglens.py
@@ -285,7 +327,6 @@ Current scope limits:
 - only retrieval and llm spans are implemented
 - onboarding path is local-first and repo-based
 - editable install from local checkout is the supported SDK path today
-- no Docker Compose local setup yet
 - no packaged CLI yet
 - no PyPI publishing yet
 - no LangChain adapter yet

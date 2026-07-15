@@ -6,7 +6,9 @@ RAGLens v0.1 is complete and smoke-tested.
 
 RAGLens v0.2 Developer Integration / Local SDK Onboarding is complete, documented, and smoke-tested.
 
-RAGLens v0.3.5 Diagnostic Quality hardening is now implemented and smoke-tested.
+RAGLens v0.3.5 Diagnostic Quality hardening is implemented and smoke-tested.
+
+RAGLens v0.4.0 Local Release / Install & First-Run Experience is complete and smoke-tested.
 
 The project now has:
 
@@ -20,13 +22,15 @@ The project now has:
 
 ## Current Goal
 
-Choose and start v0.4 Packaging / External Developer Experience planning.
+Deliver and validate v0.4.0 Local Release / Install & First-Run Experience.
 
 Current focus:
 
-- prepare v0.4 scope decision and default recommendation
-- define first-run external developer experience improvements
-- keep v0.3.5 validation assets as regression baselines
+- Docker-first startup path for external developers
+- non-Docker fallback path for local development
+- health checks and reset guidance
+- release notes + README + smoke docs alignment
+- keep deterministic warning behavior and current contracts unchanged
 
 ## Current System Status
 
@@ -96,7 +100,7 @@ React Dashboard
 
 ## Current Milestone
 
-v0.3.5 Diagnostic Quality hardening and reference integration validation.
+v0.4.0 Local Release / Install & First-Run Experience.
 
 Status: implemented and smoke-tested.
 
@@ -190,15 +194,14 @@ Milestone status:
 - Do not start LangChain adapters.
 - Do not start LlamaIndex adapters.
 - Do not start PyPI work.
-- Do not start Docker work.
-- Do not start CLI work.
-- Do not start packaging work beyond the current local editable SDK path.
+- Do not add hosted/cloud/auth product features.
 - Do not add agent spans.
 - Do not add tool spans.
 - Do not add memory spans.
 - Do not make LLM-as-judge the default path.
 - Continue local-first.
 - Continue deterministic-first.
+- Keep SDK trace API, collector API contract, storage schema, and dashboard data contract stable.
 
 ## Current Implementation Limits
 
@@ -235,20 +238,7 @@ Still not implemented:
 
 ## Next Task
 
-Choose the next narrow follow-up after the completed v0.3.5 diagnostic-quality hardening slice.
+Start v0.5 planning or run a narrow v0.4.1 polish slice if needed.
 
-Default recommendation:
-
-Prepare v0.4 scope decision with Packaging / External Developer Experience as the default path.
-
-Recommended next options:
-
-1. v0.4 planning: package and distribution path (Docker/CLI/PyPI) with deterministic local defaults preserved.
-2. v0.4 planning: adapter strategy for external frameworks (LangChain/LlamaIndex) without changing trace contracts.
-3. v0.4 hardening: acceptance snapshots for warning outputs across reference demo traces.
-4. v0.4 UX: richer diagnostics exploration for signals/evidence while keeping warning generation server-side deterministic.
-5. Future planning: agent/tool/retry observability direction remains explicitly out of current scope.
-
-Guardrail:
-
-Do not start LangChain, LlamaIndex, PyPI, Docker, CLI, agent/tool/memory spans, cloud, auth, or LLM-as-judge work unless explicitly selected as a future milestone.
+1. v0.5 default recommendation: Python SDK distribution and PyPI planning.
+2. v0.4.1 optional: release polish only if new issues are found during external onboarding.

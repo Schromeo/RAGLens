@@ -1,5 +1,86 @@
 # Devlog
 
+## 2026-07-14 (v0.4.0 Local Release / First-Run DX)
+
+### Completed
+
+- Added Docker local stack at repository root:
+  - `docker-compose.yml`
+  - collector service on `:4319`
+  - dashboard service on `:5173`
+  - persistent Docker volume `raglens_data` for SQLite storage
+- Added collector container build:
+  - `collector/go/Dockerfile`
+- Added dashboard container build and static serving:
+  - `dashboard/web/Dockerfile`
+  - `dashboard/web/nginx.conf`
+- Added release/install support files:
+  - `.dockerignore`
+  - `.env.example`
+  - `LICENSE` (MIT)
+- Added v0.4 docs:
+  - `docs/releases/V0_4_0.md`
+  - `docs/demo/REFERENCE_RAG_APP.md`
+- Updated first-run guidance:
+  - `README.md`
+  - `docs/demo/SMOKE_TEST.md`
+  - `docs/ai-context/ROADMAP.md`
+  - `docs/ai-context/CURRENT_TASK.md`
+  - `docs/ai-context/AI_HANDOFF.md`
+- Added optional local health checker:
+  - `scripts/check-raglens.py`
+
+### Validation Commands
+
+Planned v0.4 validation commands:
+
+```bash
+cd collector/go
+go test ./... -count=1
+
+cd dashboard/web
+npm run build
+
+cd ..\..
+docker compose up --build
+curl http://localhost:4319/health
+
+cd sdk/python
+pip install -e .
+python -m examples.reference_rag_app.run all
+```
+
+### Observed Results
+
+- `cd collector/go && go test ./... -count=1` passed.
+- `cd dashboard/web && npm run build` passed.
+- `docker compose up --build` built both collector and dashboard images and started containers successfully.
+- `curl http://localhost:4319/health` returned HTTP 200 with JSON `{"service":"raglens-collector","status":"ok"}`.
+- `curl http://localhost:5173` returned HTTP 200 HTML for dashboard app.
+- `cd sdk/python && pip install -e .` passed in local `.venv`.
+- `python -m examples.reference_rag_app.run all` completed and flushed all expected traces:
+  - `reference-rag-app-refund`
+  - `reference-rag-app-conflict`
+  - `reference-rag-app-wrong-window`
+  - `reference-rag-app-processing-range`
+  - `reference-rag-app-wrong-processing-range`
+  - `reference-rag-app-damaged`
+  - `reference-rag-app-digital`
+  - `reference-rag-app-subscription`
+  - `reference-rag-app-weak`
+- Collector list API verification confirmed all 9 expected reference trace names were present.
+- Docker cleanup commands passed:
+  - `docker compose down`
+  - `docker compose down -v`
+
+### Notes
+
+- v0.4.0 keeps warning behavior deterministic-first.
+- No SDK trace API changes were made.
+- No collector API contract changes were made.
+- No storage schema changes were made.
+- No dashboard data contract changes were made.
+
 ## 2026-07-08 (v0.3.5 Diagnostic Quality Hardening Completed)
 
 ### Completed
