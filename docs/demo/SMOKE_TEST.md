@@ -30,7 +30,7 @@ Expected health response:
 
 ```json
 {
-  "service": "raglens-collector",
+  "service": "sledtrace-collector",
   "status": "ok"
 }
 ```
@@ -54,7 +54,7 @@ http://localhost:5173
 From repository root:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 ```
 
 Then:
@@ -101,7 +101,7 @@ docker compose down -v
 
 Reset non-Docker SQLite data:
 
-- Collector defaults to `raglens.db` and `scripts/start-raglens.py` runs collector from `collector/go`.
+- Collector defaults to `raglens.db` and `scripts/start-sledtrace.py` runs collector from `collector/go`.
 - So the default local DB path is `collector/go/raglens.db`.
 
 Bash:
@@ -125,3 +125,5 @@ reference-rag-app run all: pass / fail
 dashboard loads: pass / fail
 reference traces visible: pass / fail
 ```
+
+

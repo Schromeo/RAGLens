@@ -25,7 +25,7 @@ export default function App() {
 
         <div className="topbar-brand">
           <div className="eyebrow">Local-first RAG debugger</div>
-          <h1>RAGLens</h1>
+          <h1>SledTrace</h1>
         </div>
 
         <div className="topbar-right">

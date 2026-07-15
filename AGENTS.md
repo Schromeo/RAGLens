@@ -3,7 +3,7 @@
 
 ## Project
 
-RAGLens is a local-first visual debugger for RAG pipelines.
+SledTrace is a local-first visual debugger for RAG pipelines.
 
 ## Product Goal
 
@@ -43,7 +43,7 @@ Planned stack:
 
 ## Design Philosophy
 
-RAGLens is not a full hosted LLMOps platform.
+SledTrace is not a full hosted LLMOps platform.
 
 It should feel like a lightweight developer tool:
 
@@ -59,3 +59,5 @@ It should feel like a lightweight developer tool:
 - Do not build a full Langfuse replacement.
 - Do not build a generic AI gateway in v0.1.
 - Do not over-engineer the MVP.
+
+

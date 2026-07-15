@@ -1,6 +1,6 @@
 # Dashboard Demo Polish Checklist
 
-This checklist defines the minimum dashboard polish needed for the RAGLens v0.1 local demo.
+This checklist defines the minimum dashboard polish needed for the SledTrace v0.1 local demo.
 
 The goal is not to make the UI visually fancy.
 
@@ -17,19 +17,19 @@ When a developer opens a demo trace, they should quickly understand:
 - what warnings were generated
 - why the warning matters
 
-RAGLens should make the RAG pipeline visible:
+SledTrace should make the RAG pipeline visible:
 
 ```txt
 Query
-  ↓
+  ->
 Retrieval
-  ↓
+  ->
 Retrieved chunks
-  ↓
+  ->
 Prompt
-  ↓
+  ->
 Answer
-  ↓
+  ->
 Warnings
 ````
 
@@ -191,3 +191,6 @@ Dashboard demo polish is good enough for v0.1 when:
 * the `conflict` case clearly shows conflicting evidence
 * the `hallucinated` case clearly shows an unsupported answer
 * the dashboard is good enough for README screenshots
+
+
+

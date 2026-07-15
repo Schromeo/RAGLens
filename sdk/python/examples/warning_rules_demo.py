@@ -2,14 +2,14 @@ import argparse
 import json
 from typing import Callable
 
-from raglens import trace
+from sledtrace import trace
 
 
 def print_and_flush(t):
     print(t.to_json())
 
     response = t.flush()
-    print("\nSent trace to RAGLens collector:")
+    print("\nSent trace to SledTrace collector:")
     print(response)
     print("-" * 80)
 
@@ -22,7 +22,7 @@ def run_conflicting_chunks_demo():
         query=query,
         metadata={
             "sdk_language": "python",
-            "sdk_version": "0.1.0",
+            "sdk_version": "0.4.1",
             "app": "warning-rules-demo",
             "case": "conflicting_chunks",
             "environment": "local",
@@ -100,7 +100,7 @@ def run_no_chunks_demo():
         query=query,
         metadata={
             "sdk_language": "python",
-            "sdk_version": "0.1.0",
+            "sdk_version": "0.4.1",
             "app": "warning-rules-demo",
             "case": "no_retrieved_chunks",
             "environment": "local",
@@ -149,7 +149,7 @@ def run_low_score_demo():
         query=query,
         metadata={
             "sdk_language": "python",
-            "sdk_version": "0.1.0",
+            "sdk_version": "0.4.1",
             "app": "warning-rules-demo",
             "case": "low_retrieval_score",
             "environment": "local",
@@ -226,7 +226,7 @@ def run_duplicate_chunks_demo():
         query=query,
         metadata={
             "sdk_language": "python",
-            "sdk_version": "0.1.0",
+            "sdk_version": "0.4.1",
             "app": "warning-rules-demo",
             "case": "duplicate_chunks",
             "environment": "local",
@@ -302,7 +302,7 @@ def run_ungrounded_answer_demo():
         query=query,
         metadata={
             "sdk_language": "python",
-            "sdk_version": "0.1.0",
+            "sdk_version": "0.4.1",
             "app": "warning-rules-demo",
             "case": "answer_not_grounded",
             "environment": "local",
@@ -370,7 +370,7 @@ DEMOS: dict[str, Callable[[], None]] = {
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run RAGLens warning rule demos."
+        description="Run SledTrace warning rule demos."
     )
     parser.add_argument(
         "demo",
@@ -396,3 +396,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

@@ -1,17 +1,17 @@
-# RAGLens Python SDK
+# SledTrace Python SDK
 
-Python SDK for sending local RAG pipeline traces to RAGLens.
+Python SDK for sending local RAG pipeline traces to SledTrace.
 
-## Install (v0.2 local path)
+## Install (v0.4.1 local path)
 
 ```bash
-pip install -e /path/to/raglens/sdk/python
+pip install -e /path/to/sledtrace/sdk/python
 ```
 
 ## Basic Usage
 
 ```python
-from raglens import trace
+from sledtrace import trace
 
 user_query = "What is the refund policy?"
 
@@ -26,7 +26,7 @@ with trace(name="my-rag-request", query=user_query) as t:
         }
     ]
 
-    # Convert retriever-native results into RAGLens-style chunk dicts
+    # Convert retriever-native results into SledTrace-style chunk dicts
     t.retrieval(
         query=user_query,
         chunks=retrieved_chunks,
@@ -57,13 +57,13 @@ Default collector URL: [http://localhost:4319](http://localhost:4319)
 Bash:
 
 ```bash
-export RAGLENS_COLLECTOR_URL=http://localhost:4319
+export SLEDTRACE_COLLECTOR_URL=http://localhost:4319
 ```
 
 PowerShell:
 
 ```powershell
-$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+$env:SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 ```
 
 ## More Docs
@@ -72,3 +72,7 @@ $env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
 - ../../docs/integrations/PYTHON_SDK_GUIDE.md
 
 Repository examples such as examples.custom_pipeline_demo are local examples, not part of the public installed SDK API.
+
+
+
+

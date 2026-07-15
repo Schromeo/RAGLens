@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-from raglens import trace
+from sledtrace import trace
 
 
 def build_prompt(query: str, chunks: list[dict]) -> str:
@@ -355,7 +355,7 @@ def run_conflicting_chunks_case() -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run RAGLens v0.3 diagnostic intelligence demo cases."
+        description="Run SledTrace v0.3 diagnostic intelligence demo cases."
     )
     parser.add_argument(
         "case",
@@ -373,7 +373,7 @@ def main() -> None:
         print("Query: What is the refund window?")
         print(f"Answer: {answer}")
         print("Expected warning: numeric_mismatch")
-        print("Trace flushed to the local RAGLens collector.")
+        print("Trace flushed to the local SledTrace collector.")
         print()
 
     if args.case in {"weak-overlap", "all"}:
@@ -382,7 +382,7 @@ def main() -> None:
         print("Query: What is the refund window?")
         print(f"Answer: {answer}")
         print("Expected warning: weak_query_chunk_overlap")
-        print("Trace flushed to the local RAGLens collector.")
+        print("Trace flushed to the local SledTrace collector.")
         print()
 
     if args.case in {"unsupported-claim", "all"}:
@@ -391,7 +391,7 @@ def main() -> None:
         print("Query: What is the refund window?")
         print(f"Answer: {answer}")
         print("Expected warning: answer_not_grounded")
-        print("Trace flushed to the local RAGLens collector.")
+        print("Trace flushed to the local SledTrace collector.")
         print()
 
     if args.case in {"conflicting-chunks", "all"}:
@@ -400,8 +400,11 @@ def main() -> None:
         print("Query: What is the refund window?")
         print(f"Answer: {answer}")
         print("Expected warning: conflicting_chunks")
-        print("Trace flushed to the local RAGLens collector.")
+        print("Trace flushed to the local SledTrace collector.")
 
 
 if __name__ == "__main__":
     main()
+
+
+

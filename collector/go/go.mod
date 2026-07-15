@@ -1,4 +1,4 @@
-module raglens-collector
+module sledtrace-collector
 
 go 1.22
 

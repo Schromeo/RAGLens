@@ -1,4 +1,4 @@
-from raglens import trace
+from sledtrace import trace
 
 
 def my_retriever(query: str) -> list[dict]:
@@ -113,8 +113,10 @@ def main() -> None:
 
     print(f"Query: {query}")
     print(f"Answer: {answer}")
-    print("Trace flushed to the local RAGLens collector.")
+    print("Trace flushed to the local SledTrace collector.")
 
 
 if __name__ == "__main__":
     main()
+
+

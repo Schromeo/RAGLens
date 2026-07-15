@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "Starting RAGLens collector..."
+Write-Host "Starting SledTrace collector..."
 Write-Host "Expected URL: http://localhost:4319"
 Write-Host ""
 
@@ -13,4 +13,4 @@ if (-not (Test-Path $collectorDir)) {
 
 Set-Location $collectorDir
 
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector

@@ -25,7 +25,7 @@ def main() -> int:
     collector_ok, collector_data = check_url(COLLECTOR_URL)
     dashboard_ok, dashboard_data = check_url(DASHBOARD_URL)
 
-    print("RAGLens local checks")
+    print("SledTrace local checks")
     print("===================")
 
     if collector_ok:
@@ -40,7 +40,7 @@ def main() -> int:
     else:
         print("collector: FAILED")
         print(f"  reason: {collector_data}")
-        print("  next: run 'docker compose up --build' or 'python scripts/start-raglens.py'")
+        print("  next: run 'docker compose up --build' or 'python scripts/start-sledtrace.py'")
 
     if dashboard_ok:
         print("dashboard: OK")

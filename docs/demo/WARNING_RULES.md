@@ -1,6 +1,6 @@
 # Warning Rules
 
-This document describes the current deterministic warning rules used by local RAGLens demos.
+This document describes the current deterministic warning rules used by local SledTrace demos.
 
 The warning engine remains deterministic-first and local-first.
 The goal is to make common RAG failure modes visible during local development, not to provide a complete factuality or evaluation system.
@@ -108,3 +108,5 @@ It does not yet perform:
 For v0.1, the goal is to demonstrate the shape of grounding diagnostics with a deterministic local rule.
 
 Future versions can expand this into richer grounding analysis.
+
+

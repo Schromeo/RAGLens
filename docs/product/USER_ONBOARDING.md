@@ -1,23 +1,23 @@
-# User Onboarding: Integrating RAGLens Into Your Existing RAG App
+# User Onboarding: Integrating SledTrace Into Your Existing RAG App
 
-RAGLens is a local-first trace and debugging layer for RAG pipelines.
+SledTrace is a local-first trace and debugging layer for RAG pipelines.
 
 This guide explains how to instrument your own pipeline using the Python SDK.
 Do not modify the built-in `local_rag_demo` for real usage. Use it only as a reference and smoke test.
 
-## What RAGLens Is
+## What SledTrace Is
 
-RAGLens helps you debug why a RAG answer was good or bad by showing:
+SledTrace helps you debug why a RAG answer was good or bad by showing:
 
 - retrieval spans and retrieved chunks
 - LLM spans (prompt/response)
 - warning signals generated from trace data
 
-RAGLens is built for local development loops: run your app locally, send traces to the local collector, inspect them in the local dashboard.
+SledTrace is built for local development loops: run your app locally, send traces to the local collector, inspect them in the local dashboard.
 
-## What RAGLens Is Not
+## What SledTrace Is Not
 
-RAGLens is not:
+SledTrace is not:
 
 - a chatbot framework
 - a vector database
@@ -25,11 +25,11 @@ RAGLens is not:
 - a hosted AI platform
 - a replacement for your RAG application
 
-For v0.2 onboarding scope, RAGLens also does not include:
+For v0.2 onboarding scope, SledTrace also does not include:
 
 - LangChain integration
 - LlamaIndex integration
-- real LLM provider integrations inside RAGLens itself
+- real LLM provider integrations inside SledTrace itself
 - agent/tool/memory span tracing
 - cloud sync, auth, or hosted features
 
@@ -44,44 +44,44 @@ You should already have your own:
 - LLM call(s)
 - answer assembly
 
-## Two Ways to Use RAGLens
+## Two Ways to Use SledTrace
 
-RAGLens v0.2 has two practical local-first entry points.
+SledTrace v0.2 has two practical local-first entry points.
 
 ### 1. Try the built-in demo
 
-Use this path when you want to verify that RAGLens itself works on your machine.
+Use this path when you want to verify that SledTrace itself works on your machine.
 
-1. Clone the RAGLens repo.
+1. Clone the SledTrace repo.
 2. Start the collector and dashboard from that repo.
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 ```
 
 3. Run the built-in local demo or smoke test.
 4. Open the local dashboard and inspect the generated traces.
 
-Use this only to verify the RAGLens stack. Do not modify `local_rag_demo` for real usage.
+Use this only to verify the SledTrace stack. Do not modify `local_rag_demo` for real usage.
 
-### 2. Integrate RAGLens into your own RAG app
+### 2. Integrate SledTrace into your own RAG app
 
 Use this path when you want to instrument an existing application.
 
-1. Clone the RAGLens repo somewhere on your machine.
+1. Clone the SledTrace repo somewhere on your machine.
 2. Start the collector and dashboard from that repo.
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 ```
 
 3. In your own app's virtual environment, install the SDK from the local checkout:
 
 ```bash
-pip install -e /path/to/raglens/sdk/python
+pip install -e /path/to/sledtrace/sdk/python
 ```
 
-4. Import `trace` from `raglens`.
+4. Import `trace` from `sledtrace`.
 5. Wrap your own RAG request path.
 6. Log retrieval and LLM spans.
 7. Call `flush()` after the trace context exits.
@@ -89,11 +89,11 @@ pip install -e /path/to/raglens/sdk/python
 
 This is the actual v0.2 onboarding path for real integration.
 
-Future releases may support `pip install raglens`, CLI startup helpers, or Docker Compose shortcuts, but those are not the current v0.2 flow.
+Future releases may support `pip install sledtrace`, CLI startup helpers, or Docker Compose shortcuts, but those are not the current v0.2 flow.
 
-## How RAGLens Fits Into an Existing RAG App
+## How SledTrace Fits Into an Existing RAG App
 
-RAGLens wraps what you already do.
+SledTrace wraps what you already do.
 
 1. Start a trace at request entry.
 2. Log retrieval output as a retrieval span.
@@ -118,7 +118,7 @@ Use this loop while iterating on quality:
 Recommended v0.2 startup from the repo root:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 ```
 
 This repo-local helper starts the collector from `collector/go` and the dashboard from `dashboard/web`.
@@ -129,7 +129,7 @@ If you need manual fallback steps, start the two local services separately:
 
 ```bash
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 ```
 
 Health check:
@@ -152,7 +152,7 @@ Keep collector at `http://localhost:4319` for local SDK flushes.
 
 v0.2 uses local editable install from a repo checkout.
 
-If you are working inside the RAGLens repo:
+If you are working inside the SledTrace repo:
 
 ```bash
 cd sdk/python
@@ -162,7 +162,7 @@ pip install -e .
 If you are installing the SDK into another local project:
 
 ```bash
-pip install -e /path/to/raglens/sdk/python
+pip install -e /path/to/sledtrace/sdk/python
 ```
 
 Do not assume PyPI installation is available yet.
@@ -170,7 +170,7 @@ Do not assume PyPI installation is available yet.
 Basic import:
 
 ```python
-from raglens import trace
+from sledtrace import trace
 ```
 
 ## Wrap Your Pipeline With `trace()`
@@ -178,7 +178,7 @@ from raglens import trace
 Use one trace per user request (or per top-level pipeline call).
 
 ```python
-from raglens import trace
+from sledtrace import trace
 
 
 def answer_question(user_query: str) -> str:
@@ -196,7 +196,7 @@ def answer_question(user_query: str) -> str:
         t.retrieval(
             name="primary_retrieval",
             query=user_query,
-            chunks=to_raglens_chunks(retrieved),
+            chunks=to_SledTrace_chunks(retrieved),
             top_k=4,
             metadata={
                 "retriever": "my_retriever_v2",
@@ -236,7 +236,7 @@ Use `t.retrieval(...)` for your retrieval step:
 
 `chunks` should represent what your retriever actually returned, not transformed synthetic data.
 
-In this example, `to_raglens_chunks(...)` is an application-owned adapter function, not necessarily an SDK helper. It converts your retriever-native result objects into RAGLens chunk dictionaries.
+In this example, `to_SledTrace_chunks(...)` is an application-owned adapter function, not necessarily an SDK helper. It converts your retriever-native result objects into SledTrace chunk dictionaries.
 
 ## Log LLM Spans
 
@@ -314,7 +314,7 @@ Notes:
 - Missing optional fields usually do not block ingestion, but they reduce dashboard clarity and warning quality.
 - In particular, missing `score` weakens `low_retrieval_score` diagnostics.
 
-## What RAGLens Analyzes Today
+## What SledTrace Analyzes Today
 
 Current warning analysis includes:
 
@@ -326,9 +326,9 @@ Current warning analysis includes:
 
 These rules are intentionally simple and local-first.
 
-## What RAGLens Does Not Analyze Yet
+## What SledTrace Does Not Analyze Yet
 
-RAGLens does not yet perform:
+SledTrace does not yet perform:
 
 - semantic retrieval relevance evaluation
 - claim extraction + entailment checking
@@ -353,9 +353,12 @@ For real usage:
 ## Practical Integration Checklist
 
 1. Start local collector and dashboard.
-2. Add `from raglens import trace` to your app.
+2. Add `from sledtrace import trace` to your app.
 3. Wrap one top-level request with `with trace(...) as t:`.
 4. Log `t.retrieval(...)` with real retrieved chunks.
 5. Log `t.llm(...)` with prompt/response and model details.
 6. Call `t.flush()` after the `with` block.
 7. Inspect traces in dashboard and iterate.
+
+
+

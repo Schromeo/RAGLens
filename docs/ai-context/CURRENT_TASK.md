@@ -2,13 +2,13 @@
 
 ## Current Focus
 
-RAGLens v0.1 is complete and smoke-tested.
+SledTrace v0.1 is complete and smoke-tested.
 
-RAGLens v0.2 Developer Integration / Local SDK Onboarding is complete, documented, and smoke-tested.
+SledTrace v0.2 Developer Integration / Local SDK Onboarding is complete, documented, and smoke-tested.
 
-RAGLens v0.3.5 Diagnostic Quality hardening is implemented and smoke-tested.
+SledTrace v0.3.5 Diagnostic Quality hardening is implemented and smoke-tested.
 
-RAGLens v0.4.0 Local Release / Install & First-Run Experience is complete and smoke-tested.
+SledTrace v0.4.1 Rebrand release is complete and smoke-tested.
 
 The project now has:
 
@@ -22,14 +22,13 @@ The project now has:
 
 ## Current Goal
 
-Deliver and validate v0.4.0 Local Release / Install & First-Run Experience.
+Deliver and validate v0.4.1 Rebrand release.
 
 Current focus:
 
-- Docker-first startup path for external developers
-- non-Docker fallback path for local development
-- health checks and reset guidance
-- release notes + README + smoke docs alignment
+- Rename active project branding from RAGLens to SledTrace
+- Keep backward compatibility for legacy launcher and collector env var
+- Publish migration guidance and rebrand release notes
 - keep deterministic warning behavior and current contracts unchanged
 
 ## Current System Status
@@ -75,7 +74,7 @@ Completed so far:
 - `docs/product/USER_ONBOARDING.md` completed
 - `docs/integrations/PYTHON_SDK_GUIDE.md` completed
 - `sdk/python/examples/custom_pipeline_demo.py` added
-- `scripts/start-raglens.py` added and polished
+- `scripts/start-sledtrace.py` added and polished
 - `README.md` updated with two Quickstart paths
 - `sdk/python/examples/diagnostic_quality_demo.py` covers all current v0.3 core warning cases
 - dashboard warning detail cards show evidence previews, numeric value diffs, and recommended actions
@@ -84,23 +83,23 @@ Completed so far:
 
 ```text
 Python SDK
-  ↓
+  ->
 t.flush()
-  ↓
+  ->
 POST /api/traces
-  ↓
+  ->
 Go Collector
-  ↓
+  ->
 SQLite
-  ↓
+  ->
 GET /api/traces
-  ↓
+  ->
 React Dashboard
 ```
 
 ## Current Milestone
 
-v0.4.0 Local Release / Install & First-Run Experience.
+v0.4.1 Rebrand.
 
 Status: implemented and smoke-tested.
 
@@ -115,7 +114,7 @@ go test ./...
 cd dashboard/web
 npm run build
 
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
@@ -182,7 +181,7 @@ Milestone status:
 - `docs/product/USER_ONBOARDING.md` - developer onboarding flow for existing RAG apps
 - `docs/integrations/PYTHON_SDK_GUIDE.md` - current Python SDK API guide
 - `sdk/python/examples/custom_pipeline_demo.py` - minimal local integration example
-- `scripts/start-raglens.py` - cross-platform repo-local startup helper
+- `scripts/start-sledtrace.py` - cross-platform repo-local startup helper
 - `sdk/python/pyproject.toml` - SDK package version and README path aligned for v0.2
 - `sdk/python/README.md` - concise SDK package README for local install and API usage
 - `docs/ai-context/ROADMAP.md` - v0.2 status updated
@@ -242,3 +241,6 @@ Start v0.5 planning or run a narrow v0.4.1 polish slice if needed.
 
 1. v0.5 default recommendation: Python SDK distribution and PyPI planning.
 2. v0.4.1 optional: release polish only if new issues are found during external onboarding.
+
+
+

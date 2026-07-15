@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"raglens-collector/internal/models"
+	"sledtrace-collector/internal/models"
 
 	_ "modernc.org/sqlite"
 )

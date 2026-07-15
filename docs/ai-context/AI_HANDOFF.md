@@ -2,13 +2,28 @@
 
 ## Project Name
 
-RAGLens
+SledTrace
 
 ## One-liner
 
-RAGLens is a local-first visual debugger for RAG pipelines.
+SledTrace is a local-first visual debugger for RAG pipelines.
 
 ## Current Project Status
+
+### v0.4.1 Status
+
+**v0.4.1 Rebrand is complete and compatibility-preserving.**
+
+v0.4.1 implementation focus:
+
+- Rename active branding from RAGLens to SledTrace
+- Preserve compatibility for legacy startup and collector environment variables
+- Keep APIs, warning logic, and SQLite schema unchanged
+- Add migration and release documentation for the rebrand
+
+Historical context:
+
+- v0.4.0 was originally released under the RAGLens name
 
 ### v0.4.0 Status
 
@@ -49,7 +64,7 @@ Completed v0.2 work:
 - `docs/product/USER_ONBOARDING.md`
 - `docs/integrations/PYTHON_SDK_GUIDE.md`
 - `sdk/python/examples/custom_pipeline_demo.py`
-- `scripts/start-raglens.py`
+- `scripts/start-sledtrace.py`
 - `README.md` two-path quickstart
 - root README documentation map
 - SDK packaging hygiene:
@@ -61,7 +76,7 @@ Completed v0.2 work:
 
 **v0.3 RAG Quality Analysis / Diagnostic Intelligence core is complete and smoke-tested.**
 
-v0.3 upgraded RAGLens from simple warning flags into evidence-backed diagnostic insights.
+v0.3 upgraded SledTrace from simple warning flags into evidence-backed diagnostic insights.
 
 Completed v0.3 core work:
 
@@ -125,23 +140,23 @@ Current backend test coverage verifies:
 
 ```text
 Python SDK
-  ↓
+  ->
 trace()
-  ↓
+  ->
 retrieval span + LLM span
-  ↓
+  ->
 t.flush()
-  ↓
+  ->
 POST /api/traces
-  ↓
+  ->
 Go Collector (:4319)
-  ↓
+  ->
 Warning Engine
-  ↓
+  ->
 SQLite
-  ↓
+  ->
 GET /api/traces/{trace_id}
-  ↓
+  ->
 React Dashboard
 ```
 
@@ -176,7 +191,7 @@ docker compose down -v
 Legacy validated v0.2 / v0.3 / v0.3.5 runtime commands:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 
 cd sdk/python
 python -m examples.custom_pipeline_demo
@@ -248,7 +263,7 @@ Important current state:
 - conflicting_chunks is now evidence-backed v2 for numeric conflicts in similar local context.
 - numeric_mismatch detects answer numeric values that conflict with retrieved chunk values.
 - weak_query_chunk_overlap detects low lexical overlap between the query and top retrieved chunks.
-- RAGLens still does not use LLM-as-judge by default.
+- SledTrace still does not use LLM-as-judge by default.
 - conflicting chunk selection is relevance-aware and topic-gated in v0.3.5.
 - numeric extraction supports natural-language ranges (for example `5 to 10 business days`).
 
@@ -315,7 +330,7 @@ v0.2 onboarding artifacts still relevant:
 - docs/product/USER_ONBOARDING.md
 - docs/integrations/PYTHON_SDK_GUIDE.md
 - sdk/python/examples/custom_pipeline_demo.py
-- scripts/start-raglens.py
+- scripts/start-sledtrace.py
 - README.md
 - sdk/python/pyproject.toml
 - sdk/python/README.md
@@ -340,14 +355,14 @@ Current scope limits:
 
 ## Current Positioning
 
-RAGLens is:
+SledTrace is:
 
 - a local-first visual debugger for RAG pipelines
 - a local trace and debugging layer for existing RAG apps
 - useful both with the built-in demo and with user-owned Python RAG pipelines instrumented through the SDK
 - currently strongest at explaining RAG failures through deterministic evidence-backed diagnostics
 
-RAGLens is not:
+SledTrace is not:
 
 - a chatbot framework
 - a vector database
@@ -360,7 +375,7 @@ RAGLens is not:
 
 ## Recommended Next Milestone
 
-Recommended next step: v0.4 — Packaging and External Developer Experience
+Recommended next step: v0.4 -Packaging and External Developer Experience
 
 The v0.3.5 hardening scope is complete.
 
@@ -372,7 +387,7 @@ Recommended version naming:
 
 Recommended v0.4 goal:
 
-Make local-first RAGLens easier to adopt outside this repository while preserving deterministic diagnostics and current trace contracts.
+Make local-first SledTrace easier to adopt outside this repository while preserving deterministic diagnostics and current trace contracts.
 
 Real LLM demo status:
 
@@ -430,11 +445,11 @@ Unless explicitly selected:
 - Do not start Docker, CLI, or PyPI until a later packaging milestone.
 - Do not add agent/tool/memory spans in the current milestone.
 - Do not make LLM-as-judge the default diagnostic path.
-- The real LLM demo should test RAGLens as an observer of a realistic RAG flow, not turn RAGLens into a RAG framework.
+- The real LLM demo should test SledTrace as an observer of a realistic RAG flow, not turn SledTrace into a RAG framework.
 
 ## Future Agent Harness Observability Direction
 
-Future possible TraceForge direction, not implemented in current RAGLens:
+Future possible TraceForge direction, not implemented in current SledTrace:
 
 - running traces for multi-step agent/harness executions
 - partial span ingestion for long-running or interrupted runs
@@ -446,5 +461,7 @@ Future possible TraceForge direction, not implemented in current RAGLens:
 
 Important scope note:
 
-- none of the above is implemented in current RAGLens
+- none of the above is implemented in current SledTrace
 - this direction is future-only and should not be claimed as current capability
+
+

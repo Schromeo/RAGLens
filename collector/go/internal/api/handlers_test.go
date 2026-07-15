@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"raglens-collector/internal/models"
-	"raglens-collector/internal/storage"
+	"sledtrace-collector/internal/models"
+	"sledtrace-collector/internal/storage"
 )
 
 func TestPostTraceGeneratesV3WarningAndGetTraceDetailReturnsWarningFields(t *testing.T) {

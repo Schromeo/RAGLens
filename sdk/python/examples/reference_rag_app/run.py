@@ -1,5 +1,5 @@
 """
-RAGLens Thin Reference RAG App
+SledTrace Thin Reference RAG App
 
 This example is intentionally a thin RAG app, not a full RAG framework.
 
@@ -10,9 +10,9 @@ It demonstrates a realistic integration flow:
     -> local lexical retrieval
     -> mixed raw retrieval result shapes
     -> normalize_chunks()
-    -> RAGLens retrieval span
+    -> SledTrace retrieval span
     -> deterministic or real LLM answer
-    -> RAGLens llm span
+    -> SledTrace llm span
     -> flush to collector
 
 Run from sdk/python:
@@ -59,7 +59,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from raglens import normalize_chunks, trace
+from sledtrace import normalize_chunks, trace
 
 DOCS_DIR = Path(__file__).parent / "docs"
 
@@ -288,8 +288,8 @@ def retrieve(query: str, chunks: Sequence[RawChunk], top_k: int = 6) -> List[Raw
     """
     Simple deterministic lexical retriever.
 
-    This is intentionally not a production retriever. It exists so RAGLens can
-    observe a realistic-ish RAG flow without turning RAGLens into a RAG framework.
+    This is intentionally not a production retriever. It exists so SledTrace can
+    observe a realistic-ish RAG flow without turning SledTrace into a RAG framework.
     """
     idf = compute_idf(chunks)
     query_terms = set(tokenize(query))
@@ -439,7 +439,7 @@ def to_mixed_raw_retrieval_results(chunks: Sequence[RawChunk]) -> List[Any]:
 
 def normalize_reference_results(raw_results: Sequence[Any]) -> List[Dict[str, Any]]:
     """
-    Normalize mixed retrieval result shapes into RAGLens chunks.
+    Normalize mixed retrieval result shapes into SledTrace chunks.
 
     Most shapes are auto-detected by normalize_chunks(). The custom enterprise
     dict shape needs explicit mapping because it uses unusual field names:
@@ -513,7 +513,7 @@ def deterministic_answer(case_name: str) -> str:
     """
     Deterministic fallback answer used when --llm is not enabled.
 
-    Some answers intentionally contain realistic RAG failure modes so RAGLens can
+    Some answers intentionally contain realistic RAG failure modes so SledTrace can
     show diagnostics without requiring an API key.
     """
     if case_name == "refund":
@@ -671,7 +671,7 @@ def record_retrieval_span(
             return
 
     raise AttributeError(
-        "Could not find retrieval span method on RAGLens trace object."
+        "Could not find retrieval span method on SledTrace trace object."
     )
 
 
@@ -709,14 +709,14 @@ def record_llm_span(
             method(**payload)
             return
 
-    raise AttributeError("Could not find LLM span method on RAGLens trace object.")
+    raise AttributeError("Could not find LLM span method on SledTrace trace object.")
 
 
 def flush_trace(t: Any) -> None:
     flush = getattr(t, "flush", None)
 
     if not callable(flush):
-        raise AttributeError("Could not find flush() on RAGLens trace object.")
+        raise AttributeError("Could not find flush() on SledTrace trace object.")
 
     flush()
 
@@ -742,7 +742,7 @@ def run_case(case_name: str, use_llm: bool = False) -> None:
     prompt = build_prompt(query, normalized_chunks)
 
     print("=" * 80)
-    print(f"RAGLens Reference RAG App case: {case_name}")
+    print(f"SledTrace Reference RAG App case: {case_name}")
     print(f"Query: {query}")
     print(f"Documents: {len(documents)}")
     print(f"Chunks: {len(all_chunks)}")
@@ -825,7 +825,7 @@ def run_case(case_name: str, use_llm: bool = False) -> None:
     print(answer)
     print(f"\nAnswer generation latency: {llm_elapsed_ms}ms")
     print(f"Trace flushed: {trace_name}")
-    print("Open the RAGLens dashboard and inspect diagnostics.")
+    print("Open the SledTrace dashboard and inspect diagnostics.")
     print("=" * 80)
 
 
@@ -862,3 +862,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+

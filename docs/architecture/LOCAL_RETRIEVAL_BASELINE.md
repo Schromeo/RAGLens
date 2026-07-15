@@ -57,3 +57,6 @@ After Real Local RAG Demo is validated:
 - sentence-transformers embeddings + cosine similarity
 
 This should be introduced without breaking existing trace and warning contracts.
+
+
+

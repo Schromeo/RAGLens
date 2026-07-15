@@ -35,6 +35,8 @@ pnpm-debug.log*
 *.out
 collector/go/raglens-collector
 collector/go/raglens-collector.exe
+collector/go/sledtrace-collector
+collector/go/sledtrace-collector.exe
 
 # Local databases
 *.db

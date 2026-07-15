@@ -1,12 +1,18 @@
-# RAGLens
+# SledTrace
 
-RAGLens is a local-first visual debugger for RAG pipelines.
+SledTrace is an open-source, local-first platform for tracing, evaluating, and debugging RAG and AI workflows.
+
+Local-first observability and debugging for RAG pipelines.
 
 It helps developers inspect why a RAG application produced a bad answer by showing the full pipeline: retrieved chunks, retrieval scores, prompts, responses, and diagnostic warnings.
 
-RAGLens is designed for local development first. The default local demo is deterministic, API-key free, and runs entirely on your machine.
+SledTrace is designed for local development first. The default local demo is deterministic, API-key free, and runs entirely on your machine.
 
-## Why RAGLens?
+#### Why "SledTrace"?
+
+Named after my husky. Running a RAG pipeline is like pulling a sled: many components - retrievers, rerankers, LLMs - pulling together like a dog team, and when the sled goes off course, you need to read the tracks in the snow to figure out which dog stumbled. SledTrace shows you the tracks.
+
+## Why SledTrace?
 
 RAG applications often fail silently.
 
@@ -20,29 +26,29 @@ A wrong answer may come from:
 * an answer that is not grounded in retrieved context
 * the model ignoring useful context
 
-RAGLens makes these failure modes visible so developers can debug the pipeline instead of guessing what went wrong.
+SledTrace makes these failure modes visible so developers can debug the pipeline instead of guessing what went wrong.
 
 ## Screenshots
 
 ### Trace overview
 
-RAGLens shows local RAG traces with warning counts and demo case labels.
+SledTrace shows local RAG traces with warning counts and demo case labels.
 
 ![Trace overview](docs/assets/screenshots/trace-list.png)
 
 ### Conflicting retrieved context
 
-RAGLens can surface conflicting retrieved chunks, such as legacy and current refund policies that disagree.
+SledTrace can surface conflicting retrieved chunks, such as legacy and current refund policies that disagree.
 
 ![Conflicting retrieved context](docs/assets/screenshots/conflict-trace-detail.png)
 
 ### Answer not grounded in retrieved context
 
-RAGLens can flag answers that introduce unsupported claims even when retrieval found relevant context.
+SledTrace can flag answers that introduce unsupported claims even when retrieval found relevant context.
 
 ![Answer not grounded](docs/assets/screenshots/answer-not-grounded.png)
 
-## What RAGLens shows
+## What SledTrace shows
 
 The current local MVP supports:
 
@@ -75,7 +81,7 @@ Current warning rules:
 * `conflicting_chunks`
 * `answer_not_grounded`
 
-The current warning rules are intentionally deterministic and local-first. RAGLens does not use LLM-as-judge by default.
+The current warning rules are intentionally deterministic and local-first. SledTrace does not use LLM-as-judge by default.
 
 See `docs/demo/WARNING_RULES.md` for current rule definitions and limitations.
 
@@ -116,7 +122,7 @@ Use this path when you do not want Docker.
 From the repo root:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 ```
 
 Then run traces in another terminal:
@@ -130,41 +136,41 @@ Manual fallback startup (non-Docker):
 
 ```bash
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 
 cd dashboard/web
 npm install
 npm run dev
 ```
 
-### Path C: Use RAGLens with your own RAG app
+### Path C: Use SledTrace with your own RAG app
 
 Use this path when you want to instrument an existing Python RAG application instead of using only the built-in demo.
 
-1. Clone RAGLens somewhere locally.
+1. Clone SledTrace somewhere locally.
 
-2. From the RAGLens repo root, start local services:
+2. From the SledTrace repo root, start local services:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 ```
 
 3. In your own app virtual environment, install the SDK from the local checkout:
 
 ```bash
-pip install -e /path/to/raglens/sdk/python
+pip install -e /path/to/sledtrace/sdk/python
 ```
 
 4. Instrument your own request path with the Python SDK:
 
 ```python
-from raglens import trace
+from sledtrace import trace
 
 
 def answer_question(user_query: str) -> str:
     with trace(name="my-rag-request", query=user_query) as t:
         retrieved = my_retriever(user_query)
-        chunks = to_raglens_chunks(retrieved)
+        chunks = to_sledtrace_chunks(retrieved)
 
         t.retrieval(
             query=user_query,
@@ -188,7 +194,7 @@ def answer_question(user_query: str) -> str:
     return answer
 ```
 
-`to_raglens_chunks(...)` represents your app-owned adapter from retriever-native results to RAGLens chunk dictionaries.
+`to_sledtrace_chunks(...)` represents your app-owned adapter from retriever-native results to SledTrace chunk dictionaries.
 
 A minimal chunk shape looks like this:
 
@@ -265,7 +271,7 @@ You can also use the provided PowerShell scripts from the repository root.
 One-click start:
 
 ```powershell
-python .\scripts\start-raglens.py
+python .\scripts\start-sledtrace.py
 ```
 
 Start the collector:
@@ -299,7 +305,7 @@ On macOS, use the shell scripts in `scripts/mac`.
 One-click start:
 
 ```bash
-python ./scripts/start-raglens.py
+python ./scripts/start-sledtrace.py
 ```
 
 Start the collector:
@@ -330,13 +336,15 @@ bash ./scripts/mac/smoke.sh
 
 ### For users
 
-* `docs/product/USER_ONBOARDING.md` - Integrate RAGLens into an existing RAG app.
+* `docs/product/USER_ONBOARDING.md` - Integrate SledTrace into an existing RAG app.
 * `docs/integrations/PYTHON_SDK_GUIDE.md` - Python SDK API usage.
 * `docs/demo/LOCAL_RAG_DEMO.md` - Deterministic local demo flow.
 * `docs/demo/REFERENCE_RAG_APP.md` - Reference integration runbook.
 * `docs/demo/SMOKE_TEST.md` - End-to-end smoke test flow.
 * `docs/demo/WARNING_RULES.md` - Current warning rules and limitations.
-* `docs/releases/V0_4_0.md` - v0.4.0 release notes.
+* `docs/releases/V0_4_0.md` - v0.4.0 release notes (originally released under the RAGLens name).
+* `docs/releases/V0_4_1.md` - SledTrace v0.4.1 rebrand release notes.
+* `docs/REBRANDING.md` - migration notes for the RAGLens to SledTrace rename.
 
 ### For contributors / maintainers
 
@@ -355,12 +363,12 @@ Milestone snapshot:
 * v0.2 developer integration / local SDK onboarding: complete
 * v0.3 diagnostic intelligence core: complete
 * v0.3.5 deterministic diagnostic-quality hardening: complete
-* v0.4.0 local release / first-run developer experience: complete
+* v0.4.1 rebrand release: complete
 
 Current version:
 
 ```text
-v0.4.0 — Local Release / Install & First-Run Experience
+v0.4.1 - Rebrand
 ```
 
 Completed:
@@ -415,15 +423,15 @@ Current scope limits:
 
 ## Project direction
 
-RAGLens starts as a local-first visual debugger for RAG pipelines.
+SledTrace starts as a local-first visual debugger for RAG pipelines.
 
-RAGLens starts with RAG pipeline debugging because retrieval, context quality, conflicting evidence, and grounding are common failure points in AI applications.
+SledTrace starts with RAG pipeline debugging because retrieval, context quality, conflicting evidence, and grounding are common failure points in AI applications.
 
 The longer-term direction is to evolve the tracing core into a local-first observability layer for AI application harnesses: systems that manage context, tools, memory, model calls, verification, and feedback around foundation models.
 
-In that direction, RAGLens can grow beyond retrieval and LLM spans toward tool spans, memory spans, verification spans, human feedback spans, and richer diagnostics over AI application traces. Those remain future direction only and are not implemented in the current SDK.
+In that direction, SledTrace can grow beyond retrieval and LLM spans toward tool spans, memory spans, verification spans, human feedback spans, and richer diagnostics over AI application traces. Those remain future direction only and are not implemented in the current SDK.
 
-Future agent harness observability may also include running traces across multi-step executions, partial span ingestion, additional span types such as agent, tool, and retry spans, plus diagnostics for agent loops, oscillation, retry storms, and no-progress execution. These are not implemented in current RAGLens.
+Future agent harness observability may also include running traces across multi-step executions, partial span ingestion, additional span types such as agent, tool, and retry spans, plus diagnostics for agent loops, oscillation, retry storms, and no-progress execution. These are not implemented in current SledTrace.
 
 Near-term focus:
 
@@ -435,7 +443,7 @@ Future integrations such as LangChain, LlamaIndex, PyPI publishing, and hosted/c
 
 ## Design principles
 
-RAGLens follows a few core principles:
+SledTrace follows a few core principles:
 
 * local-first by default
 * deterministic demo path
@@ -444,3 +452,5 @@ RAGLens follows a few core principles:
 * make retrieved evidence, prompts, responses, and warnings inspectable
 * keep warning rules simple, explicit, evidence-backed, and documented
 * preserve current trace contracts while improving developer experience
+
+

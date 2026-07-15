@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Starting RAGLens collector..."
+echo "Starting SledTrace collector..."
 echo "Expected URL: http://localhost:4319"
 echo
 
@@ -15,4 +15,4 @@ if [[ ! -d "$collector_dir" ]]; then
 fi
 
 cd "$collector_dir"
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector

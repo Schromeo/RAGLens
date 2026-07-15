@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The reference app is a thin, realistic integration sample for validating RAGLens diagnostics without turning RAGLens into a RAG framework.
+The reference app is a thin, realistic integration sample for validating SledTrace diagnostics without turning SledTrace into a RAG framework.
 
 It demonstrates:
 
@@ -93,3 +93,6 @@ python -m examples.reference_rag_app.run refund --llm
 - reference-rag-app-digital
 - reference-rag-app-subscription
 - reference-rag-app-weak
+
+
+

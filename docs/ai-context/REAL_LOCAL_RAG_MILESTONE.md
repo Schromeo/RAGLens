@@ -4,7 +4,7 @@
 Completed
 
 ## Goal
-Replace mock retrieval chunks with real local retrieval output while keeping the existing RAGLens trace schema and warning pipeline unchanged.
+Replace mock retrieval chunks with real local retrieval output while keeping the existing SledTrace trace schema and warning pipeline unchanged.
 
 ## Why This Milestone
 The Warning Engine / Diagnosis Layer MVP is complete and validated end-to-end.
@@ -62,11 +62,11 @@ Primary smoke test:
 ```powershell
 # terminal 1
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 
 # terminal 2
 cd sdk/python
-$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+$env:SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 python -m examples.local_rag_demo.run_demo inspect
 python -m examples.local_rag_demo.run_demo retrieve "How can I reset my password?"
 python -m examples.local_rag_demo.run_demo trace duplicate
@@ -94,3 +94,6 @@ python -m examples.warning_rules_demo all
 - Add unit tests for warning rules.
 - Evaluate semantic retrieval baseline (sentence-transformers + cosine).
 - Consider framework adapters after schema and warning behavior remain stable.
+
+
+

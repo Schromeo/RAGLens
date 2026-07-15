@@ -1,5 +1,30 @@
 # Devlog
 
+## 2026-07-15 (v0.4.1 Rebrand)
+
+### Completed
+
+- Rebranded active project name from RAGLens to SledTrace across product docs and UI labels.
+- Added rebrand migration guide:
+  - `docs/REBRANDING.md`
+- Added release notes:
+  - `docs/releases/V0_4_1.md`
+- Added new primary startup launcher:
+  - `scripts/start-sledtrace.py`
+- Kept legacy startup command via compatibility wrapper:
+  - `scripts/start-raglens.py`
+- Added preferred collector env var support in SDK and docs:
+  - `SLEDTRACE_COLLECTOR_URL`
+- Kept legacy collector env var support for this release:
+  - `RAGLENS_COLLECTOR_URL` (deprecated)
+- Updated dashboard and compose branding to SledTrace while keeping collector port `4319`.
+- Kept SQLite table schema and contracts unchanged.
+
+### Notes
+
+- v0.4.1 is compatibility-preserving and does not change warning logic, API semantics, or storage schema.
+- v0.4.0 remains historically accurate as a release originally published under the RAGLens name.
+
 ## 2026-07-14 (v0.4.0 Local Release / First-Run DX)
 
 ### Completed
@@ -8,7 +33,7 @@
   - `docker-compose.yml`
   - collector service on `:4319`
   - dashboard service on `:5173`
-  - persistent Docker volume `raglens_data` for SQLite storage
+  - persistent Docker volume `sledtrace_data` for SQLite storage
 - Added collector container build:
   - `collector/go/Dockerfile`
 - Added dashboard container build and static serving:
@@ -55,7 +80,7 @@ python -m examples.reference_rag_app.run all
 - `cd collector/go && go test ./... -count=1` passed.
 - `cd dashboard/web && npm run build` passed.
 - `docker compose up --build` built both collector and dashboard images and started containers successfully.
-- `curl http://localhost:4319/health` returned HTTP 200 with JSON `{"service":"raglens-collector","status":"ok"}`.
+- `curl http://localhost:4319/health` returned HTTP 200 with JSON `{"service":"sledtrace-collector","status":"ok"}`.
 - `curl http://localhost:5173` returned HTTP 200 HTML for dashboard app.
 - `cd sdk/python && pip install -e .` passed in local `.venv`.
 - `python -m examples.reference_rag_app.run all` completed and flushed all expected traces:
@@ -278,7 +303,7 @@ Observed results:
   - partial span ingestion
   - future `agent` / `tool` / `retry` span types
   - diagnostics for agent loops, oscillation, retry storms, and no-progress execution
-- Explicitly marked all of the above as not implemented in current RAGLens.
+- Explicitly marked all of the above as not implemented in current SledTrace.
 
 ## 2026-07-02 (v0.2 Developer Integration / Local SDK Onboarding Completed)
 
@@ -289,7 +314,7 @@ Observed results:
   - `docs/product/USER_ONBOARDING.md`
   - `docs/integrations/PYTHON_SDK_GUIDE.md`
 - Added `sdk/python/examples/custom_pipeline_demo.py` and validated dashboard visibility for `custom-rag-pipeline`.
-- Added and polished `scripts/start-raglens.py` as a cross-platform repo-local startup helper.
+- Added and polished `scripts/start-sledtrace.py` as a cross-platform repo-local startup helper.
 - Updated `README.md` with two quickstart paths:
   - Path A: built-in demo
   - Path B: own RAG app integration
@@ -305,7 +330,7 @@ Observed results:
 Validated the v0.2 integration flow with:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
@@ -336,17 +361,17 @@ Observed results:
   - `docs/product/USER_ONBOARDING.md`
   - `docs/integrations/PYTHON_SDK_GUIDE.md`
 - Added `sdk/python/examples/custom_pipeline_demo.py` as a minimal deterministic integration example.
-- Added and polished `scripts/start-raglens.py` as a cross-platform repo-local startup helper.
+- Added and polished `scripts/start-sledtrace.py` as a cross-platform repo-local startup helper.
 - Updated `README.md` to document two quickstart paths:
-  - Path A: try RAGLens with the built-in demo
-  - Path B: use RAGLens with your own RAG app
+  - Path A: try SledTrace with the built-in demo
+  - Path B: use SledTrace with your own RAG app
 
 ### Validation
 
 Validated the v0.2 integration flow with the following commands:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
@@ -374,14 +399,14 @@ Observed result:
 ### Completed
 
 - Unified startup guidance across `README.md`, `docs/product/USER_ONBOARDING.md`, and `docs/integrations/PYTHON_SDK_GUIDE.md`.
-- Standardized the recommended v0.2 local startup command to `python scripts/start-raglens.py`.
+- Standardized the recommended v0.2 local startup command to `python scripts/start-sledtrace.py`.
 - Kept manual collector/dashboard startup steps as fallback paths where useful.
 
 ## 2026-07-02 (Repo-Local Startup Helper Polish)
 
 ### Completed
 
-- Added `scripts/start-raglens.py` as the recommended repo-local v0.2 startup helper.
+- Added `scripts/start-sledtrace.py` as the recommended repo-local v0.2 startup helper.
 - Kept the helper dependency-free and cross-platform:
   - starts collector from `collector/go`
   - starts dashboard from `dashboard/web`
@@ -418,8 +443,8 @@ Observed result:
 - Added `docs/product/USER_ONBOARDING.md` for Developer Integration / User Onboarding.
 - Documented practical integration for existing RAG pipelines using the Python SDK (without modifying `local_rag_demo`).
 - Captured clear positioning boundaries:
-  - RAGLens is a local-first tracing and debugging layer for RAG pipelines.
-  - RAGLens is not a chatbot framework, vector DB, training framework, hosted platform, or app replacement.
+  - SledTrace is a local-first tracing and debugging layer for RAG pipelines.
+  - SledTrace is not a chatbot framework, vector DB, training framework, hosted platform, or app replacement.
 - Included concrete guidance for:
   - local service startup (collector + dashboard)
   - wrapping request paths with `trace(...)`
@@ -432,7 +457,7 @@ Observed result:
 
 ### Completed
 
-- Clarified long-term direction: RAGLens remains a local-first visual debugger for RAG pipelines in v0.1, while the tracing core is positioned to evolve toward TraceForge-style AI application harness observability.
+- Clarified long-term direction: SledTrace remains a local-first visual debugger for RAG pipelines in v0.1, while the tracing core is positioned to evolve toward TraceForge-style AI application harness observability.
 - Documented RAG as the first vertical slice because retrieval quality, context quality, conflicting evidence, and grounding are common AI failure points.
 - Updated docs to separate current implementation from future direction:
   - v0.1 remains completed
@@ -669,7 +694,7 @@ Observed result:
 
 ### Notes
 
-RAGLens now has an end-to-end diagnosis path from ingestion to UI rendering.
+SledTrace now has an end-to-end diagnosis path from ingestion to UI rendering.
 
 The warning engine is intentionally incremental in v0.1: start with one high-signal rule, validate the full loop, then add additional rules.
 
@@ -686,8 +711,8 @@ Expand warning coverage with the next rules:
 
 ### Completed
 
-- Defined the v0.1 product direction for RAGLens.
-- Confirmed that RAGLens starts as a local-first visual debugger for RAG pipelines.
+- Defined the v0.1 product direction for SledTrace.
+- Confirmed that SledTrace starts as a local-first visual debugger for RAG pipelines.
 - Established the long-term architecture direction: start with RAG debugging, while keeping the internal model compatible with future AgentOps/TraceForge-style tracing.
 - Created the initial product specification in `docs/product/PRODUCT_SPEC.md`.
 - Defined the initial trace/span data model in `docs/architecture/TRACE_DATA_MODEL.md`.
@@ -712,13 +737,13 @@ Expand warning coverage with the next rules:
 
 ### Key Decisions
 
-- RAGLens v0.1 will use a local-first architecture.
+- SledTrace v0.1 will use a local-first architecture.
 - SQLite will be the default local storage backend.
 - The Python SDK will expose a simple API:
   - `trace(name)`
   - `t.retrieval(...)`
   - `t.llm(...)`
-- Internally, RAGLens will represent RAG pipeline activity using a trace/span model.
+- Internally, SledTrace will represent RAG pipeline activity using a trace/span model.
 - A trace represents one complete RAG request.
 - A span represents one step inside the pipeline, such as retrieval or LLM generation.
 - The initial span types are:
@@ -732,8 +757,8 @@ Expand warning coverage with the next rules:
 
 ### Completed
 
-- Chose RAGLens as the first product cut.
-- Defined the long-term path: RAGLens -> AgentOps Lite -> TraceForge.
+- Chose SledTrace as the first product cut.
+- Defined the long-term path: SledTrace -> AgentOps Lite -> TraceForge.
 - Decided to start with a local-first visual debugger for RAG pipelines.
 - Created the initial repository documentation plan.
 
@@ -770,7 +795,7 @@ The SDK successfully generated a trace payload containing:
 
 ### Notes
 
-This is the first runnable milestone for RAGLens.
+This is the first runnable milestone for SledTrace.
 
 The project now has both:
 
@@ -811,7 +836,7 @@ Started the collector locally:
 
 ```bash
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 ```
 
 Checked collector health:
@@ -869,7 +894,7 @@ Started the collector:
 
 ```bash
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 ```
 
 Ran the Python demo:
@@ -893,7 +918,7 @@ Collector response:
 
 ### Notes
 
-RAGLens now has a working local trace ingestion path from Python SDK to Go collector to SQLite.
+SledTrace now has a working local trace ingestion path from Python SDK to Go collector to SQLite.
 
 The next step is to build the initial React Dashboard so traces can be inspected visually instead of through raw JSON.
 
@@ -981,7 +1006,7 @@ Started the collector:
 
 ```bash
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 ```
 
 Generated and flushed a demo trace:
@@ -1015,7 +1040,7 @@ Verified that the dashboard can display:
 
 ### Notes
 
-RAGLens now has a complete local inspection loop:
+SledTrace now has a complete local inspection loop:
 
 - Python SDK -> Go Collector -> SQLite -> React Dashboard
 
@@ -1062,3 +1087,5 @@ The first target warning is conflicting_chunks for the refund policy demo.
 ### Notes
 
 - This is a documentation-only change and does not affect runtime behavior.
+
+

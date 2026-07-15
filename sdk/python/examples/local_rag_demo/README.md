@@ -2,13 +2,13 @@
 
 ## What This Demo Is
 
-This demo is a real, local retrieval pipeline wired into the existing RAGLens trace path.
+This demo is a real, local retrieval pipeline wired into the existing SledTrace trace path.
 
 It replaces synthetic retrieval chunks with actual retrieval output while preserving the same SDK trace schema, collector ingestion flow, SQLite persistence, dashboard visualization, and warning engine behavior.
 
 ## Why This Demo Exists
 
-The goal is to prove that RAGLens can diagnose real retrieval behavior, not only handcrafted warning examples.
+The goal is to prove that SledTrace can diagnose real retrieval behavior, not only handcrafted warning examples.
 
 This milestone keeps the implementation intentionally simple and local-first:
 
@@ -69,7 +69,7 @@ Run these commands from sdk/python.
 Collector should already be running on port 4319.
 
 ```powershell
-$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+$env:SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 ```
 
 ## Run Inspect
@@ -145,3 +145,6 @@ You should see:
 - No external embeddings service.
 
 These are intentionally deferred to keep v0.1 local-first, transparent, and simple.
+
+
+

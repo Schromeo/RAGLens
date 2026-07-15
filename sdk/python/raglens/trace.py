@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 import json
+import os
+import sys
 import traceback
 import urllib.request
 import urllib.error
@@ -23,7 +25,7 @@ class RAGLensTrace:
 
     Public API example:
 
-        from raglens import trace
+        from sledtrace import trace
 
         with trace("refund-policy-qa") as t:
             t.retrieval(query="...", chunks=[...])
@@ -41,7 +43,7 @@ class RAGLensTrace:
         self.name = name
         self.query = query
         self.metadata = metadata or {}
-        self.collector_url = collector_url or "http://localhost:4319"
+        self.collector_url = resolve_collector_url(collector_url)
 
         self._started_at: Optional[str] = None
         self._ended_at: Optional[str] = None
@@ -222,7 +224,7 @@ class RAGLensTrace:
 
         trace_metadata = {
             "sdk_language": "python",
-            "sdk_version": "0.1.0",
+            "sdk_version": "0.4.1",
             **self.metadata,
         }
 
@@ -254,7 +256,7 @@ class RAGLensTrace:
 
     def flush(self, collector_url: Optional[str] = None, timeout: float = 5.0) -> JsonDict:
         """
-        Send the trace payload to the local RAGLens collector.
+        Send the trace payload to the local SledTrace collector.
 
         Args:
             collector_url: Optional collector base URL. Defaults to self.collector_url.
@@ -277,7 +279,7 @@ class RAGLensTrace:
             method="POST",
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "raglens-python-sdk/0.1.0",
+                "User-Agent": "sledtrace-python-sdk/0.4.1",
             },
         )
 
@@ -292,12 +294,12 @@ class RAGLensTrace:
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(
-                f"RAGLens collector returned HTTP {exc.code}: {body}"
+                f"SledTrace collector returned HTTP {exc.code}: {body}"
             ) from exc
 
         except urllib.error.URLError as exc:
             raise RuntimeError(
-                f"Failed to connect to RAGLens collector at {url}: {exc.reason}"
+                f"Failed to connect to SledTrace collector at {url}: {exc.reason}"
             ) from exc
 
     def _normalize_chunks(self, chunks: List[JsonDict]) -> List[JsonDict]:
@@ -324,6 +326,42 @@ def trace(
     collector_url: Optional[str] = None,
 ) -> RAGLensTrace:
     """
-    Create a RAGLens trace context manager.
+    Create a SledTrace trace context manager.
     """
     return RAGLensTrace(name=name, query=query, metadata=metadata, collector_url=collector_url,)
+
+
+SledTraceTrace = RAGLensTrace
+
+_DEFAULT_COLLECTOR_URL = "http://localhost:4319"
+_LEGACY_COLLECTOR_ENV = "RAGLENS_COLLECTOR_URL"
+_NEW_COLLECTOR_ENV = "SLEDTRACE_COLLECTOR_URL"
+_legacy_env_notice_emitted = False
+
+
+def resolve_collector_url(explicit_url: Optional[str]) -> str:
+    if explicit_url:
+        return explicit_url
+
+    new_value = os.getenv(_NEW_COLLECTOR_ENV)
+    if new_value:
+        return new_value
+
+    legacy_value = os.getenv(_LEGACY_COLLECTOR_ENV)
+    if legacy_value:
+        emit_legacy_env_warning_once()
+        return legacy_value
+
+    return _DEFAULT_COLLECTOR_URL
+
+
+def emit_legacy_env_warning_once() -> None:
+    global _legacy_env_notice_emitted
+    if _legacy_env_notice_emitted:
+        return
+
+    _legacy_env_notice_emitted = True
+    print(
+        "DEPRECATED: RAGLENS_COLLECTOR_URL is deprecated; use SLEDTRACE_COLLECTOR_URL instead.",
+        file=sys.stderr,
+    )

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Starting RAGLens dashboard..."
+echo "Starting SledTrace dashboard..."
 echo
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

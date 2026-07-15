@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "RAGLens smoke test"
+echo "SledTrace smoke test"
 echo "Collector: http://localhost:4319"
 echo
 
-export RAGLENS_COLLECTOR_URL="http://localhost:4319"
+export SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../.." && pwd)"

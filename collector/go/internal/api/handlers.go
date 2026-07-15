@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	"raglens-collector/internal/models"
-	"raglens-collector/internal/storage"
-	"raglens-collector/internal/warnings"
+	"sledtrace-collector/internal/models"
+	"sledtrace-collector/internal/storage"
+	"sledtrace-collector/internal/warnings"
 )
 
 type Server struct {
@@ -37,7 +37,7 @@ func (s *Server) Routes() http.Handler {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":  "ok",
-		"service": "raglens-collector",
+		"service": "sledtrace-collector",
 	})
 }
 

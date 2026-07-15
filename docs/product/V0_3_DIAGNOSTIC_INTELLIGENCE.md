@@ -1,10 +1,10 @@
-# RAGLens v0.3 - Diagnostic Intelligence
+# SledTrace v0.3 - Diagnostic Intelligence
 
 ## Purpose
 
-Define the scope and design for RAGLens v0.3 - RAG Quality Analysis / Diagnostic Intelligence.
+Define the scope and design for SledTrace v0.3 - RAG Quality Analysis / Diagnostic Intelligence.
 
-v0.3 upgrades RAGLens from simple warning flags into evidence-backed diagnostic insights.
+v0.3 upgrades SledTrace from simple warning flags into evidence-backed diagnostic insights.
 
 Warnings should explain why they were raised, which chunks, claims, and values were involved, and which deterministic signals triggered the diagnosis.
 
@@ -85,7 +85,7 @@ v0.3 establishes the first implemented evidence-backed diagnostic layer without 
 
 The goal of v0.3 is to help a developer answer three questions for a bad RAG response:
 
-1. Why did RAGLens raise this warning?
+1. Why did SledTrace raise this warning?
 2. What exact evidence inside the trace triggered it?
 3. Which part of the failure came from retrieval quality versus answer grounding?
 
@@ -109,7 +109,7 @@ v0.3 is in scope for the following work:
 - enhanced deterministic warning rules for retrieval quality and answer grounding
 - dashboard UX that shows why a warning fired instead of only showing its title
 - demo traces that clearly exercise each new warning rule
-- rule logic built only from local deterministic heuristics over trace data already captured by RAGLens
+- rule logic built only from local deterministic heuristics over trace data already captured by SledTrace
 
 Additional scope clarifications:
 
@@ -647,3 +647,5 @@ For each v0.3 demo trace, a developer should be able to answer all of the follow
 4. Is the problem mainly retrieval quality, chunk conflict, or answer grounding?
 
 If those answers are visible without reading collector code, v0.3 has met its product goal.
+
+

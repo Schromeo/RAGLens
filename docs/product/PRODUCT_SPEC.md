@@ -1,8 +1,8 @@
-# RAGLens Product Spec
+# SledTrace Product Spec
 
 ## Product Name
 
-RAGLens
+SledTrace
 
 ## Tagline
 
@@ -16,7 +16,7 @@ When a RAG application gives an incorrect answer, developers often cannot easily
 
 Most developers debug RAG pipelines with print statements.
 
-RAGLens aims to make the pipeline visible.
+SledTrace aims to make the pipeline visible.
 
 ## Target Users
 
@@ -62,7 +62,7 @@ As a developer, I want to add a few lines of Python to my RAG app so that I can 
 ## MVP API Example
 
 ```python
-from raglens import trace
+from sledtrace import trace
 
 with trace("refund-policy-qa") as t:
     t.retrieval(
@@ -157,11 +157,11 @@ The demo should show a case where:
 - One chunk says refund window is 30 days
 - Another chunk says refund window is 14 days
 - The LLM answer uses the outdated 14-day policy
-- RAGLens surfaces a warning
+- SledTrace surfaces a warning
 
 ## Non-goals for v0.1
 
-RAGLens v0.1 will not include:
+SledTrace v0.1 will not include:
 
 - User authentication
 - Team workspace
@@ -181,10 +181,10 @@ RAGLens v0.1 will not include:
 
 v0.1 is successful if:
 
-- A developer can install and run RAGLens locally.
+- A developer can install and run SledTrace locally.
 - A developer can instrument a simple RAG pipeline with a few lines of Python.
 - A developer can open the UI and inspect retrieved chunks and LLM output.
-- The demo clearly shows how RAGLens helps debug a wrong RAG answer.
+- The demo clearly shows how SledTrace helps debug a wrong RAG answer.
 - The README makes the project understandable within 60 seconds.
 
 ## Implementation Snapshot (2026-06-15)
@@ -229,17 +229,17 @@ Next recommended milestone:
 
 ## Long-term Vision
 
-RAGLens begins as a local-first debugger for RAG pipelines. This keeps the MVP focused and useful.
+SledTrace begins as a local-first debugger for RAG pipelines. This keeps the MVP focused and useful.
 
 The broader product direction is local-first observability for AI application harnesses. In this framing, a RAG pipeline is one type of AI harness: it selects context, calls a model, and produces an answer. Future AI harnesses may also include tools, memory, planners, verification steps, permissions, human feedback, and multi-step agent workflows.
 
-RAGLens should preserve a general trace/span foundation so future versions can support additional span types beyond retrieval and LLM calls.
+SledTrace should preserve a general trace/span foundation so future versions can support additional span types beyond retrieval and LLM calls.
 
-Future harness-observability expansion can include running traces, partial span ingestion, and span types such as agent, tool, and retry, with diagnostics for agent loops, oscillation, retry storms, and no-progress execution. This is future direction only and is not implemented in current RAGLens.
+Future harness-observability expansion can include running traces, partial span ingestion, and span types such as agent, tool, and retry, with diagnostics for agent loops, oscillation, retry storms, and no-progress execution. This is future direction only and is not implemented in current SledTrace.
 
 ## Product Principle
 
-RAGLens should feel like a developer tool, not an enterprise observability platform.
+SledTrace should feel like a developer tool, not an enterprise observability platform.
 
 The v0.1 experience should be:
 
@@ -250,3 +250,5 @@ The v0.1 experience should be:
 - Useful within the first demo run
 
 The project should avoid premature infrastructure complexity.
+
+

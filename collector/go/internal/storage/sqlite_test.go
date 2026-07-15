@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"raglens-collector/internal/models"
+	"sledtrace-collector/internal/models"
 )
 
 func TestStoreWarningV2RoundTrip(t *testing.T) {
@@ -85,7 +85,7 @@ func TestStoreWarningV2RoundTrip(t *testing.T) {
 	title := "Answer numeric value conflicts with retrieved context"
 	category := "grounding"
 	confidence := 0.9
-	explanation := "RAGLens found a numeric value in the final answer that differs from a retrieved chunk with overlapping local context."
+	explanation := "SledTrace found a numeric value in the final answer that differs from a retrieved chunk with overlapping local context."
 	recommendedAction := "Inspect whether the answer copied an outdated value or ignored stronger retrieved evidence."
 
 	warnings := []models.Warning{

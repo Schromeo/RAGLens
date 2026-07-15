@@ -1,6 +1,6 @@
 # Python SDK Guide
 
-This guide covers the current RAGLens Python SDK API for v0.2.
+This guide covers the current SledTrace Python SDK API for v0.2.
 
 It is intentionally API-focused. For broader product positioning and local-first onboarding flow, see `docs/product/USER_ONBOARDING.md`.
 
@@ -22,9 +22,9 @@ Out of scope for this guide:
 
 ## Installation
 
-RAGLens v0.2 uses local editable install from a repository checkout.
+SledTrace v0.2 uses local editable install from a repository checkout.
 
-### Install while working inside the RAGLens repo
+### Install while working inside the SledTrace repo
 
 ```bash
 cd sdk/python
@@ -34,7 +34,7 @@ pip install -e .
 ### Install into another local application
 
 ```bash
-pip install -e /path/to/raglens/sdk/python
+pip install -e /path/to/sledtrace/sdk/python
 ```
 
 Do not assume PyPI installation is available yet.
@@ -49,10 +49,10 @@ http://localhost:4319
 
 Recommended v0.2 local startup from the repo checkout:
 
-From the RAGLens repo root:
+From the SledTrace repo root:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 ```
 
 This repo-local helper starts the collector from `collector/go` and the dashboard from `dashboard/web`.
@@ -63,7 +63,7 @@ Collector:
 
 ```bash
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 ```
 
 Dashboard:
@@ -81,13 +81,13 @@ You can configure the collector URL through an environment variable in your app 
 Bash / Mac / Linux:
 
 ```bash
-export RAGLENS_COLLECTOR_URL=http://localhost:4319
+export SLEDTRACE_COLLECTOR_URL=http://localhost:4319
 ```
 
 Windows PowerShell:
 
 ```powershell
-$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+$env:SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 ```
 
 The current SDK API also lets you pass an explicit collector URL through `trace(...)` or `flush(...)`.
@@ -103,14 +103,14 @@ t.llm(model, prompt=None, response=None, messages=None, name="llm", provider=Non
 t.flush(collector_url=None, timeout=5.0)
 ```
 
-`trace(...)` returns a `RAGLensTrace` context manager.
+`trace(...)` returns a `SledTraceTrace` context manager.
 
 In normal usage, one trace should represent one user request or one top-level RAG pipeline run.
 
 ## Basic Trace Example
 
 ```python
-from raglens import trace
+from sledtrace import trace
 
 
 def answer_question(user_query: str) -> str:
@@ -324,7 +324,7 @@ Do not modify `local_rag_demo` for real usage. Instrument your own application c
 
 ### Installing the SDK into the wrong virtualenv
 
-If your app runs in one virtual environment and `raglens` was installed into another, imports will fail.
+If your app runs in one virtual environment and `SledTrace` was installed into another, imports will fail.
 
 ### Assuming PyPI install is available
 
@@ -338,7 +338,7 @@ For v0.2, the supported path is editable install from a local repo checkout.
 curl http://localhost:4319/health
 ```
 
-### Check `RAGLENS_COLLECTOR_URL`
+### Check `SLEDTRACE_COLLECTOR_URL`
 
 Make sure your application process points at the collector you actually started.
 
@@ -360,3 +360,6 @@ If the trace was flushed successfully but is not visible yet, refresh the dashbo
 ### Check collector logs
 
 If `flush()` fails or traces do not appear, inspect the collector terminal output first.
+
+
+

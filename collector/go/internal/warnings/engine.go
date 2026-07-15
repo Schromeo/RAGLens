@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"raglens-collector/internal/models"
+	"sledtrace-collector/internal/models"
 )
 
 const (
@@ -719,7 +719,7 @@ func (e *Engine) detectWeakQueryChunkOverlap(payload models.TracePayload) []mode
 			Category:      stringPtr("retrieval"),
 			Confidence:    float64Ptr(0.75),
 			Explanation: stringPtr(
-				"RAGLens found that the top retrieved chunks have low lexical overlap with important terms from the user query.",
+				"SledTrace found that the top retrieved chunks have low lexical overlap with important terms from the user query.",
 			),
 			Details: models.JSONMap{
 				"rule":                  TypeWeakQueryChunkOverlap,
@@ -1151,7 +1151,7 @@ func (e *Engine) detectConflictingChunks(payload models.TracePayload) []models.W
 			Category:      stringPtr("conflict"),
 			Confidence:    float64Ptr(0.88),
 			Explanation: stringPtr(
-				"RAGLens found two retrieved chunks that state different numeric values in similar local context.",
+				"SledTrace found two retrieved chunks that state different numeric values in similar local context.",
 			),
 			Details: models.JSONMap{
 				"rule":                 TypeConflictingChunks,
@@ -1484,7 +1484,7 @@ func (e *Engine) detectNumericMismatch(payload models.TracePayload) []models.War
 			Category:      stringPtr("grounding"),
 			Confidence:    float64Ptr(0.9),
 			Explanation: stringPtr(
-				"RAGLens found a numeric value in the final answer that differs from a retrieved chunk with overlapping local context.",
+				"SledTrace found a numeric value in the final answer that differs from a retrieved chunk with overlapping local context.",
 			),
 			Details: models.JSONMap{
 				"rule":            TypeNumericMismatch,
@@ -2142,7 +2142,7 @@ func (e *Engine) detectAnswerNotGrounded(payload models.TracePayload) []models.W
 				Category:      stringPtr("grounding"),
 				Confidence:    float64Ptr(0.85),
 				Explanation: stringPtr(
-					"RAGLens found a final answer even though no retrieved chunks were available to support it.",
+					"SledTrace found a final answer even though no retrieved chunks were available to support it.",
 				),
 				Details: models.JSONMap{
 					"rule":   TypeAnswerNotGrounded,
@@ -2290,7 +2290,7 @@ func (e *Engine) detectAnswerNotGrounded(payload models.TracePayload) []models.W
 			Category:      stringPtr("grounding"),
 			Confidence:    float64Ptr(0.8),
 			Explanation: stringPtr(
-				"RAGLens found an answer sentence whose important terms are weakly supported by the retrieved chunks.",
+				"SledTrace found an answer sentence whose important terms are weakly supported by the retrieved chunks.",
 			),
 			Details: models.JSONMap{
 				"rule":          TypeAnswerNotGrounded,

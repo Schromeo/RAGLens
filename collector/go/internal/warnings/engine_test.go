@@ -3,7 +3,7 @@ package warnings
 import (
 	"testing"
 
-	"raglens-collector/internal/models"
+	"sledtrace-collector/internal/models"
 )
 
 func TestGenerateNumericMismatchWarning(t *testing.T) {

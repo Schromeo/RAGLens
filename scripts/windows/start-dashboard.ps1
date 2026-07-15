@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "Starting RAGLens dashboard..."
+Write-Host "Starting SledTrace dashboard..."
 Write-Host ""
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

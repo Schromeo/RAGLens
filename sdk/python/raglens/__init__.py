@@ -1,8 +1,9 @@
-from .trace import trace, RAGLensTrace
+from .trace import trace, RAGLensTrace, SledTraceTrace
 from .chunks import ChunkNormalizationError, normalize_chunk, normalize_chunks
 
 __all__ = [
-    "trace", 
+    "trace",
+    "SledTraceTrace",
     "RAGLensTrace",
     "ChunkNormalizationError",
     "normalize_chunk",

@@ -1,28 +1,30 @@
+name: sledtrace
+
 services:
   collector:
     build:
       context: ./collector/go
       dockerfile: Dockerfile
-    container_name: raglens-collector
+    container_name: sledtrace-collector
     environment:
-      RAGLENS_COLLECTOR_ADDR: ":4319"
-      RAGLENS_DB_PATH: /data/raglens.db
+      SLEDTRACE_COLLECTOR_ADDR: ":4319"
+      SLEDTRACE_DB_PATH: /data/raglens.db
     ports:
-      - "${RAGLENS_COLLECTOR_PORT:-4319}:4319"
+      - "${SLEDTRACE_COLLECTOR_PORT:-${RAGLENS_COLLECTOR_PORT:-4319}}:4319"
     volumes:
-      - raglens_data:/data
+      - sledtrace_data:/data
 
   dashboard:
     build:
       context: ./dashboard/web
       dockerfile: Dockerfile
       args:
-        VITE_RAGLENS_API_URL: ${VITE_RAGLENS_API_URL:-http://localhost:4319}
-    container_name: raglens-dashboard
+        VITE_SLEDTRACE_API_URL: ${VITE_SLEDTRACE_API_URL:-${VITE_RAGLENS_API_URL:-http://localhost:4319}}
+    container_name: sledtrace-dashboard
     depends_on:
       - collector
     ports:
-      - "${RAGLENS_DASHBOARD_PORT:-5173}:5173"
+      - "${SLEDTRACE_DASHBOARD_PORT:-${RAGLENS_DASHBOARD_PORT:-5173}}:5173"
 
 volumes:
-  raglens_data:
+  sledtrace_data:

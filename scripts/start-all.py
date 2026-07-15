@@ -21,10 +21,10 @@ def main() -> int:
         print(f"Dashboard directory not found: {dashboard_dir}", file=sys.stderr)
         return 1
 
-    print("Starting RAGLens collector and dashboard...")
+    print("Starting SledTrace collector and dashboard...")
     print()
 
-    collector_proc = start_process(["go", "run", "./cmd/raglens-collector"], collector_dir)
+    collector_proc = start_process(["go", "run", "./cmd/sledtrace-collector"], collector_dir)
     dashboard_proc = start_process(["npm", "run", "dev"], dashboard_dir, use_shell=sys.platform == "win32")
 
     procs = [collector_proc, dashboard_proc]

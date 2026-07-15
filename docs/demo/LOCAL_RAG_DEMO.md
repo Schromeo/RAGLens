@@ -1,7 +1,7 @@
 
 # Local RAG Demo
 
-This demo shows RAGLens debugging a fully local, deterministic RAG pipeline.
+This demo shows SledTrace debugging a fully local, deterministic RAG pipeline.
 
 It uses:
 
@@ -11,7 +11,7 @@ It uses:
 - TF-IDF retrieval
 - cosine similarity scores
 - a local template-based answerer
-- the RAGLens Python SDK
+- the SledTrace Python SDK
 - the local Go collector
 - the React dashboard
 
@@ -30,15 +30,15 @@ A bad answer may come from:
 - conflicting retrieved evidence
 - an answer that is not grounded in the retrieved chunks
 
-This demo generates representative traces for those failure modes so they can be inspected in the RAGLens dashboard.
+This demo generates representative traces for those failure modes so they can be inspected in the SledTrace dashboard.
 
 ## Prerequisites
 
-Start the RAGLens collector:
+Start the SledTrace collector:
 
 ```bash
 cd collector/go
-go run ./cmd/raglens-collector
+go run ./cmd/sledtrace-collector
 ```
 
 The collector should run on:
@@ -69,13 +69,13 @@ cd sdk/python
 For PowerShell:
 
 ```powershell
-$env:RAGLENS_COLLECTOR_URL="http://localhost:4319"
+$env:SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 ```
 
 For Bash:
 
 ```bash
-export RAGLENS_COLLECTOR_URL="http://localhost:4319"
+export SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 ```
 
 ## Commands
@@ -157,15 +157,15 @@ The goal is to understand where the RAG pipeline failed:
 
 ```txt
 Query
-  ↓
+  ->
 Retrieval
-  ↓
+  ->
 Retrieved chunks
-  ↓
+  ->
 Prompt
-  ↓
+  ->
 Answer
-  ↓
+  ->
 Warnings
 ```
 
@@ -182,4 +182,7 @@ This keeps the default demo:
 * suitable for smoke tests and screenshots
 
 Real LLM integrations can be added later, but they should not be required for the default v0.1 demo path.
+
+
+
 

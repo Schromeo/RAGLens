@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "Starting RAGLens collector and dashboard..."
+Write-Host "Starting SledTrace collector and dashboard..."
 Write-Host ""
 
 $scriptDir = $PSScriptRoot

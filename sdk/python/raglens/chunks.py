@@ -1,5 +1,5 @@
 """
-Chunk normalization helpers for RAGLens.
+Chunk normalization helpers for SledTrace.
 
 RAG frameworks return retrieved chunks in many shapes:
 
@@ -21,7 +21,7 @@ RAG frameworks return retrieved chunks in many shapes:
 - Bare string:
     "chunk text..."
 
-RAGLens only needs a normalized chunk payload:
+SledTrace only needs a normalized chunk payload:
 
 {
     "id": "...",
@@ -52,7 +52,7 @@ ValueExtractor = Union[str, Callable[[Any], Any]]
 
 
 class ChunkNormalizationError(ValueError):
-    """Raised when a retrieved item cannot be normalized into a RAGLens chunk."""
+    """Raised when a retrieved item cannot be normalized into a SledTrace chunk."""
 
 
 def normalize_chunk(
@@ -67,7 +67,7 @@ def normalize_chunk(
     default_source: str = "unknown",
 ) -> Dict[str, Any]:
     """
-    Normalize one raw retrieved item into the RAGLens chunk contract.
+    Normalize one raw retrieved item into the SledTrace chunk contract.
 
     Parameters:
         raw:
@@ -111,7 +111,7 @@ def normalize_chunk(
         extracted_id = _stable_chunk_id(extracted_text, extracted_source or default_source)
 
     normalized_metadata = dict(extracted_metadata)
-    normalized_metadata.setdefault("normalized_by", "raglens.normalize_chunk")
+    normalized_metadata.setdefault("normalized_by", "sledtrace.normalize_chunk")
 
     return {
         "id": extracted_id,
@@ -136,7 +136,7 @@ def normalize_chunks(
     skip_invalid: bool = False,
 ) -> List[Dict[str, Any]]:
     """
-    Normalize many raw retrieved items into RAGLens chunks.
+    Normalize many raw retrieved items into SledTrace chunks.
 
     By default, invalid items raise ChunkNormalizationError.
     Set skip_invalid=True to drop invalid items.

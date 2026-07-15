@@ -1,7 +1,9 @@
 import type { TraceDetailResponse, TraceListResponse } from "../types";
 
 const API_BASE_URL =
-  import.meta.env.VITE_RAGLENS_API_URL ?? "http://localhost:4319";
+  import.meta.env.VITE_SLEDTRACE_API_URL ??
+  import.meta.env.VITE_RAGLENS_API_URL ??
+  "http://localhost:4319";
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`);

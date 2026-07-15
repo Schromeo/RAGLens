@@ -1,11 +1,11 @@
 """
-RAGLens v0.3.5 Real LLM RAG Demo
+SledTrace v0.3.5 Real LLM RAG Demo
 
 Goal:
 - Keep retrieval local and deterministic.
 - Use a real OpenAI-compatible LLM for answer generation.
-- Trace both retrieval and LLM spans through the existing RAGLens SDK.
-- Inspect the resulting trace and diagnostics in the RAGLens dashboard.
+- Trace both retrieval and LLM spans through the existing SledTrace SDK.
+- Inspect the resulting trace and diagnostics in the SledTrace dashboard.
 
 Expected usage:
 
@@ -17,7 +17,7 @@ Expected usage:
   # Optional:
   export OPENAI_MODEL="gpt-4o-mini"
   export OPENAI_BASE_URL="https://api.openai.com/v1"
-  export RAGLENS_COLLECTOR_URL="http://localhost:4319"
+    export SLEDTRACE_COLLECTOR_URL="http://localhost:4319"
 
   python -m examples.real_llm_rag_demo
 
@@ -55,7 +55,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from raglens import trace
+from sledtrace import trace
 
 
 DOCS_DIR = Path(__file__).parent / "local_rag_demo" / "docs"
@@ -194,7 +194,7 @@ def retrieve(
     Deterministic local retriever.
 
     Scores chunks by weighted lexical overlap with the query.
-    This is intentionally simple so the demo focuses on RAGLens observability,
+    This is intentionally simple so the demo focuses on SledTrace observability,
     not retrieval framework complexity.
     """
     idf = compute_idf(chunks)
@@ -349,7 +349,7 @@ def call_openai_compatible_chat_completion(
         ) from exc
 
 
-def to_raglens_chunks(chunks: Sequence[RetrievedChunk]) -> List[Dict[str, Any]]:
+def to_SledTrace_chunks(chunks: Sequence[RetrievedChunk]) -> List[Dict[str, Any]]:
     """
     Convert local chunk objects into the SDK-friendly chunk payload shape.
 
@@ -396,7 +396,7 @@ def record_retrieval_span(
     payload = {
         "name": "local_tfidf_style_retriever",
         "query": query,
-        "chunks": to_raglens_chunks(chunks),
+        "chunks": to_SledTrace_chunks(chunks),
         "top_k": len(chunks),
         "metadata": metadata,
     }
@@ -414,7 +414,7 @@ def record_retrieval_span(
             return
 
     raise AttributeError(
-        "Could not find a retrieval span method on the RAGLens trace object. "
+        "Could not find a retrieval span method on the SledTrace trace object. "
         "Expected one of: retrieval, retrieval_span, log_retrieval, add_retrieval_span."
     )
 
@@ -456,7 +456,7 @@ def record_llm_span(
             return
 
     raise AttributeError(
-        "Could not find an LLM span method on the RAGLens trace object. "
+        "Could not find an LLM span method on the SledTrace trace object. "
         "Expected one of: llm, llm_span, log_llm, add_llm_span."
     )
 
@@ -465,7 +465,7 @@ def flush_trace(t: Any) -> None:
     flush = getattr(t, "flush", None)
 
     if not callable(flush):
-        raise AttributeError("Could not find flush() on the RAGLens trace object.")
+        raise AttributeError("Could not find flush() on the SledTrace trace object.")
 
     flush()
 
@@ -506,7 +506,7 @@ def run_case(case_name: str) -> None:
     prompt = build_prompt(query, retrieved_chunks, case_name)
 
     print("=" * 80)
-    print(f"RAGLens Real LLM RAG Demo case: {case_name}")
+    print(f"SledTrace Real LLM RAG Demo case: {case_name}")
     print(f"Query: {query}")
     print(f"Model: {model}")
     print(f"Base URL: {base_url}")
@@ -566,7 +566,7 @@ def run_case(case_name: str) -> None:
     print(answer)
     print(f"\nLLM latency: {llm_elapsed_ms}ms")
     print(f"Trace flushed: {trace_name}")
-    print("Open the RAGLens dashboard and inspect the trace detail page.")
+    print("Open the SledTrace dashboard and inspect the trace detail page.")
     print("=" * 80)
 
 
@@ -593,3 +593,5 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

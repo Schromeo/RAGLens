@@ -2,22 +2,22 @@
 
 This roadmap is ordered by delivery sequence.
 
-Each version includes clear scope boundaries so RAGLens stays local-first, lightweight, and useful as a developer tool.
+Each version includes clear scope boundaries so SledTrace stays local-first, lightweight, and useful as a developer tool.
 
 ## Current Snapshot
 
-**Current version:** v0.4.0 — Local Release / Install & First-Run Experience  
+**Current version:** v0.4.1 - Rebrand  
 **Status:** Completed and smoke-tested
 
-RAGLens has completed the local inspection loop for both the built-in demo and user-owned Python RAG pipelines, and is now upgrading the warning layer into evidence-backed diagnostics:
+SledTrace has completed the local inspection loop for both the built-in demo and user-owned Python RAG pipelines, and is now upgrading the warning layer into evidence-backed diagnostics:
 
 ```text
 Python SDK
-  ↓
+  ->
 Go Collector
-  ↓
+  ->
 SQLite
-  ↓
+  ->
 React Dashboard
 ```
 
@@ -49,7 +49,7 @@ Completed foundation highlights:
 * `docs/product/USER_ONBOARDING.md`
 * `docs/integrations/PYTHON_SDK_GUIDE.md`
 * `sdk/python/examples/custom_pipeline_demo.py`
-* `scripts/start-raglens.py`
+* `scripts/start-sledtrace.py`
 * README two-path quickstart for demo usage and real integration
 * README documentation map for users and maintainers
 * SDK packaging hygiene (`sdk/python` version `0.2.0`, local SDK README, local editable install path)
@@ -58,6 +58,14 @@ Completed foundation highlights:
 * v0.3 diagnostic quality demo cases for numeric mismatch, weak overlap, unsupported claim, and conflicting chunks
 * evidence-backed warning detail UI with compared-value and recommended-action blocks
 * v0.3.5 reference integration app and policy corpus under `sdk/python/examples/reference_rag_app/`
+
+Current v0.4.1 rebrand highlights:
+
+* active project branding renamed to SledTrace
+* compatibility wrapper retained at `scripts/start-raglens.py`
+* new preferred collector env var `SLEDTRACE_COLLECTOR_URL` with legacy fallback
+* migration guide at `docs/REBRANDING.md`
+* release notes at `docs/releases/V0_4_1.md`
 
 Current v0.4.0 release-readiness highlights:
 
@@ -69,7 +77,7 @@ Current v0.4.0 release-readiness highlights:
 
 ---
 
-## v0.1 — Local RAG Debugger MVP
+## v0.1 -Local RAG Debugger MVP
 
 **Status:** Done
 
@@ -137,31 +145,31 @@ Verified:
 
 ---
 
-## v0.2 — Developer Integration / Local SDK Onboarding
+## v0.2 -Developer Integration / Local SDK Onboarding
 
 **Status:** Done
 
 ### Goal
 
-Make it clear how a developer can use RAGLens with their own RAG pipeline instead of modifying the built-in local demo.
+Make it clear how a developer can use SledTrace with their own RAG pipeline instead of modifying the built-in local demo.
 
-The built-in `local_rag_demo` is a deterministic proof demo and smoke-test fixture. Real users should instrument their own retrieval and LLM calls with the RAGLens Python SDK.
+The built-in `local_rag_demo` is a deterministic proof demo and smoke-test fixture. Real users should instrument their own retrieval and LLM calls with the SledTrace Python SDK.
 
 ### Completed Core Scope
 
 #### User onboarding docs
 
 * [x] `docs/product/USER_ONBOARDING.md`
-* [x] Explain RAGLens as a local-first debugging/observability layer for RAG pipelines
+* [x] Explain SledTrace as a local-first debugging/observability layer for RAG pipelines
 * [x] Explain that real users do not modify the built-in demo for production usage
 * [x] Explain how users instrument their own RAG pipeline
-* [x] Explain what data RAGLens expects today
+* [x] Explain what data SledTrace expects today
 
 #### Python SDK integration guide
 
 * [x] `docs/integrations/PYTHON_SDK_GUIDE.md`
 * [x] local editable install instructions
-* [x] `RAGLENS_COLLECTOR_URL` configuration
+* [x] `SLEDTRACE_COLLECTOR_URL` configuration
 * [x] `trace()` basics
 * [x] Retrieval span example
 * [x] LLM span examples
@@ -177,7 +185,7 @@ The built-in `local_rag_demo` is a deterministic proof demo and smoke-test fixtu
 
 #### Unified local startup path
 
-* [x] `scripts/start-raglens.py`
+* [x] `scripts/start-sledtrace.py`
 * [x] Cross-platform repo-local startup helper
 * [x] Recommended local startup flow documented in README and SDK guide
 * [x] Existing PowerShell and macOS script paths preserved as shortcuts/fallbacks
@@ -193,7 +201,7 @@ The built-in `local_rag_demo` is a deterministic proof demo and smoke-test fixtu
 The following commands passed during v0.2 integration validation:
 
 ```bash
-python scripts/start-raglens.py
+python scripts/start-sledtrace.py
 cd sdk/python
 python -m examples.custom_pipeline_demo
 python -m examples.local_rag_demo.run_demo trace-all
@@ -234,7 +242,7 @@ Not part of current v0.2 implementation:
 
 ---
 
-## v0.3 — RAG Quality Analysis / Diagnostic Intelligence
+## v0.3 -RAG Quality Analysis / Diagnostic Intelligence
 
 **Status:** Core implemented and smoke-tested
 
@@ -285,7 +293,7 @@ These remain intentionally outside the v0.3 local-first deterministic-first path
 
 ---
 
-## v0.3.5 — Diagnostic Quality Hardening
+## v0.3.5 -Diagnostic Quality Hardening
 
 **Status:** Done
 
@@ -325,13 +333,13 @@ python -m examples.real_llm_rag_demo all
 
 ---
 
-## v0.4 — Packaging and External Developer Experience
+## v0.4 -Packaging and External Developer Experience
 
 **Status:** Done
 
 ### Goal
 
-Make RAGLens easier for an external developer to run locally from a fresh checkout.
+Make SledTrace easier for an external developer to run locally from a fresh checkout.
 
 ### Scope
 
@@ -375,7 +383,7 @@ Validated on 2026-07-15:
 
 ---
 
-## Future — Agent Harness Observability (TraceForge Direction)
+## Future -Agent Harness Observability (TraceForge Direction)
 
 **Status:** Future
 
@@ -391,5 +399,8 @@ Potential future direction after current milestones:
 
 Important scope note:
 
-* none of the above is implemented in current RAGLens
+* none of the above is implemented in current SledTrace
 * this direction is not part of current v0.4 scope
+
+
+

@@ -1,7 +1,7 @@
 """
-RAGLens Chunk Normalization Demo
+SledTrace Chunk Normalization Demo
 
-This demo shows how RAGLens can accept retrieval outputs that look like
+This demo shows how SledTrace can accept retrieval outputs that look like
 common RAG framework results instead of requiring one strict chunk shape.
 
 Run:
@@ -19,7 +19,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from raglens import normalize_chunk, normalize_chunks
+from sledtrace import normalize_chunk, normalize_chunks
 
 
 @dataclass
@@ -201,7 +201,7 @@ def main() -> int:
     #   rank_score   -> the retrieval score
     #   extra        -> metadata
     #
-    # RAGLens cannot always guess these custom fields safely, so normalize_chunk()
+    # SledTrace cannot always guess these custom fields safely, so normalize_chunk()
     # lets users provide explicit extractors.
     #
     # Extractors can be:
@@ -262,3 +262,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

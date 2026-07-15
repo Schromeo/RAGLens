@@ -1,10 +1,10 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "RAGLens smoke test"
+Write-Host "SledTrace smoke test"
 Write-Host "Collector: http://localhost:4319"
 Write-Host ""
 
-$env:RAGLENS_COLLECTOR_URL = "http://localhost:4319"
+$env:SLEDTRACE_COLLECTOR_URL = "http://localhost:4319"
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $sdkPythonDir = Join-Path $repoRoot "sdk/python"

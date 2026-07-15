@@ -662,6 +662,6 @@ function getWarningHelpText(type: string): string {
       return "The answer appears to include a claim that is not supported by the retrieved context.";
 
     default:
-      return "RAGLens detected a potential issue in this trace.";
+      return "SledTrace detected a potential issue in this trace.";
   }
 }

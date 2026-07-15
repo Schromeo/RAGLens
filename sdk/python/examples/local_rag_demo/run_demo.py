@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from raglens import trace
+from sledtrace import trace
 
 from examples.local_rag_demo.local_rag.answerer import generate_answer
 from examples.local_rag_demo.local_rag.chunker import chunk_documents
@@ -113,7 +113,7 @@ TRACE_ALL_CASE_NAMES = [
 
 
 def get_collector_url() -> str:
-    return os.getenv("RAGLENS_COLLECTOR_URL", "http://localhost:4319")
+    return os.getenv("SLEDTRACE_COLLECTOR_URL", "http://localhost:4319")
 
 
 def build_chunks():
@@ -125,7 +125,7 @@ def build_chunks():
 def inspect_demo() -> None:
     documents, chunks = build_chunks()
 
-    print("RAGLens Real Local RAG Demo")
+    print("SledTrace Real Local RAG Demo")
     print(f"Demo root: {DEMO_ROOT}")
     print(f"Docs dir: {DOCS_DIR}")
     print()
@@ -174,7 +174,7 @@ def retrieve_demo(query: str) -> None:
         min_score=0.0,
     )
 
-    print("RAGLens Real Local RAG Demo")
+    print("SledTrace Real Local RAG Demo")
     print(f"Query: {query}")
     print()
     print_retrieved_chunks(results)
@@ -313,7 +313,7 @@ def run_traced_case(case: DemoCase, verbose: bool = True) -> Any:
         query=case.query,
         metadata={
             "sdk_language": "python",
-            "sdk_version": "0.1.0",
+            "sdk_version": "0.4.1",
             "app": "real-local-rag-demo",
             "case": case.name,
             "environment": "local",
@@ -367,7 +367,7 @@ def run_traced_case(case: DemoCase, verbose: bool = True) -> Any:
     response = t.flush()
 
     if verbose:
-        print("Sent trace to RAGLens collector:")
+        print("Sent trace to SledTrace collector:")
         print(response)
         print("=" * 80)
 
@@ -377,7 +377,7 @@ def run_traced_case(case: DemoCase, verbose: bool = True) -> Any:
 def run_all_traced_cases() -> None:
     collector_url = get_collector_url()
 
-    print("RAGLens Local RAG Demo")
+    print("SledTrace Local RAG Demo")
     print(f"Collector: {collector_url}")
     print()
     print("Generating demo traces...")
@@ -411,7 +411,7 @@ def run_all_traced_cases() -> None:
     print(f"Generated traces: {succeeded}")
     print(f"Failed traces: {failed}")
     print()
-    print("Open the RAGLens dashboard and inspect the generated traces.")
+    print("Open the SledTrace dashboard and inspect the generated traces.")
     print("Suggested traces to inspect:")
     print("- real-local-rag-conflict")
     print("- real-local-rag-hallucinated")
@@ -483,3 +483,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

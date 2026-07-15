@@ -2,7 +2,7 @@
 
 ## Current v0.1 Architecture
 
-RAGLens currently runs as local-first components:
+SledTrace currently runs as local-first components:
 
 ```text
 Python SDK
@@ -111,3 +111,5 @@ POST /api/traces
   -> save warnings
   -> return stored response with warnings_generated
 ```
+
+
